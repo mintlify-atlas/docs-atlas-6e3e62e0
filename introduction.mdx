@@ -1,0 +1,94 @@
+---
+title: "Introduction"
+description: "EmulatorJS is a self-hosted JavaScript library that brings RetroArch-powered emulation to the web browser, supporting 30+ classic gaming systems."
+---
+
+EmulatorJS lets you embed retro game emulation directly into any web page. It wraps RetroArch WebAssembly cores behind a clean JavaScript API, giving you full control over which game loads, how the UI looks, and how players interact — with just a few lines of HTML and JavaScript.
+
+<CardGroup cols={2}>
+  <Card title="Quick Start" icon="rocket" href="/quickstart">
+    Embed your first emulator in under 5 minutes
+  </Card>
+  <Card title="Supported Systems" icon="gamepad" href="/supported-systems">
+    Browse the 30+ consoles and arcade systems supported
+  </Card>
+  <Card title="Configuration Options" icon="sliders" href="/configuration/basic-options">
+    Explore every configuration option available
+  </Card>
+  <Card title="Self-Hosting Guide" icon="server" href="/guides/self-hosting">
+    Host EmulatorJS on your own infrastructure
+  </Card>
+</CardGroup>
+
+## What is EmulatorJS?
+
+EmulatorJS is a frontend for [RetroArch](https://www.retroarch.com/) compiled to WebAssembly. When you include `loader.js` on your page and set a few global variables, it:
+
+1. Downloads the appropriate emulator core for your chosen system
+2. Loads and decompresses your ROM file (with built-in caching)
+3. Renders the game inside a `<div>` element you specify
+4. Presents a built-in toolbar with save states, settings, and gamepad controls
+
+It is designed to be embedded by developers — not used as a standalone site. You bring the ROM, choose the system, point it at a container element, and EmulatorJS handles the rest.
+
+## Key features
+
+<CardGroup cols={2}>
+  <Card title="30+ systems" icon="microchip">
+    NES, SNES, N64, GBA, PS1, Sega, Atari, arcade, DOS, and more
+  </Card>
+  <Card title="CDN or self-hosted" icon="cloud">
+    Use the public CDN or serve all assets from your own server
+  </Card>
+  <Card title="Virtual gamepad" icon="mobile">
+    Touch-friendly on-screen controls for mobile browsers
+  </Card>
+  <Card title="Netplay" icon="network-wired">
+    Built-in multiplayer via WebRTC and Socket.IO
+  </Card>
+  <Card title="Smart caching" icon="database">
+    IndexedDB-based cache for ROMs, cores, and BIOS files
+  </Card>
+  <Card title="Save states" icon="floppy-disk">
+    Save and load game state at any point
+  </Card>
+  <Card title="Shader support" icon="palette">
+    CRT, ScaleHQ, and custom GLSL shaders
+  </Card>
+  <Card title="Localization" icon="language">
+    UI translated into 20+ languages
+  </Card>
+</CardGroup>
+
+## Release channels
+
+EmulatorJS publishes three release channels via its CDN at `https://cdn.emulatorjs.org/`:
+
+| Channel | Description | Recommended for |
+|---------|-------------|-----------------|
+| `stable` | Tested code and tested cores | Production use |
+| `latest` | Latest code, stable cores | Testing new features |
+| `nightly` | Latest code and latest cores | Development only |
+
+<Warning>
+  The `nightly` channel updates daily and may be unstable. Do not use it in production.
+</Warning>
+
+## Getting started
+
+<Steps>
+  <Step title="Choose your deployment method">
+    Use the [public CDN](/guides/cdn-integration) for the fastest setup, or [self-host](/guides/self-hosting) for full control over assets.
+  </Step>
+  <Step title="Add a container element">
+    Add a `<div>` to your HTML page where the emulator will render.
+  </Step>
+  <Step title="Configure global variables">
+    Set `window.EJS_*` variables to specify the game, system, and options before loading `loader.js`.
+  </Step>
+  <Step title="Load the script">
+    Include `loader.js` as the final script tag. The emulator initializes automatically.
+  </Step>
+</Steps>
+
+Ready to embed your first game? Head to the [Quick Start](/quickstart) guide.

@@ -1,0 +1,285 @@
+---
+title: 'Events'
+description: 'All EmulatorJS event callbacks — how to register them before load with window.EJS_* globals and after load with window.EJS_emulator.on().'
+---
+
+## Overview
+
+EmulatorJS exposes lifecycle and save-file events so you can integrate the emulator with your own UI, analytics, or backend. There are two ways to register event handlers.
+
+## Registering event handlers
+
+### Before loader.js loads (window globals)
+
+Set `window.EJS_*` callback properties before the `<script src="data/loader.js">` tag. `loader.js` picks these up automatically during initialization:
+
+```html
+<script>
+  window.EJS_gameUrl    = '/roms/game.nes';
+  window.EJS_core       = 'nes';
+  window.EJS_player     = '#game';
+
+  // Register handlers before loader.js runs
+  window.EJS_ready = function () {
+    console.log('Emulator is ready');
+  };
+
+  window.EJS_onGameStart = function () {
+    console.log('Game started');
+  };
+</script>
+<script src="data/loader.js"></script>
+```
+
+The following globals are wired up by `loader.js`:
+
+| Global | Event |
+|---|---|
+| `window.EJS_ready` | `ready` |
+| `window.EJS_onGameStart` | `start` |
+| `window.EJS_onLoadState` | `loadState` |
+| `window.EJS_onSaveState` | `saveState` |
+| `window.EJS_onLoadSave` | `loadSave` |
+| `window.EJS_onSaveSave` | `saveSave` |
+| `window.EJS_onSaveUpdate` | `saveUpdate` (also calls `enableSaveUpdateEvent()`) |
+
+### After loader.js loads (emulator instance)
+
+Once `loader.js` has run, `window.EJS_emulator` is the live `EmulatorJS` instance. Use `.on(event, callback)` to register additional handlers:
+
+```javascript
+window.EJS_emulator.on('start', function () {
+  console.log('Game started');
+});
+```
+
+Multiple handlers can be registered for the same event — all are called in registration order.
+
+<Note>
+`window.EJS_emulator.on()` is only available after `loader.js` has finished executing and the instance has been constructed. If you need to register before that point, use the `window.EJS_*` globals instead.
+</Note>
+
+## Event reference
+
+### `ready`
+
+Fired approximately 20 ms after the emulator instance is constructed and the start button is rendered. The page is ready for user interaction but no game has loaded yet.
+
+```javascript
+window.EJS_emulator.on('ready', function () {
+  // Safe to show your custom UI around the emulator
+});
+```
+
+No data is passed to the callback.
+
+---
+
+### `start`
+
+Fired when the game begins running (after the user clicks "Start Game" and the core has initialized).
+
+```javascript
+window.EJS_emulator.on('start', function () {
+  document.getElementById('loading-overlay').remove();
+});
+```
+
+No data is passed to the callback.
+
+---
+
+### `saveState`
+
+Fired when the user clicks the "Save State" toolbar button. If **any** handler is registered for this event, EmulatorJS skips its default behavior (downloading a `.state` file) so your handler can take over.
+
+```javascript
+window.EJS_emulator.on('saveState', function (data) {
+  // data.state      — Uint8Array of the save state
+  // data.screenshot — screenshot Blob
+  // data.format     — image format string (e.g. "png")
+  uploadStateToServer(data.state, data.screenshot);
+});
+```
+
+| Property | Type | Description |
+|---|---|---|
+| `state` | `Uint8Array` | Raw save-state bytes |
+| `screenshot` | `Blob` | Screenshot taken at save time |
+| `format` | `string` | Image format of the screenshot |
+
+---
+
+### `loadState`
+
+Fired when the user clicks the "Load State" toolbar button. If **any** handler is registered, EmulatorJS skips its default behavior (file picker / browser storage) so your handler can provide the state bytes.
+
+```javascript
+window.EJS_emulator.on('loadState', function () {
+  fetchStateFromServer().then(function (stateBytes) {
+    window.EJS_emulator.gameManager.loadState(new Uint8Array(stateBytes));
+  });
+});
+```
+
+No data is passed to the callback.
+
+---
+
+### `saveSave`
+
+Fired when the user clicks the "Save File" toolbar button. If **any** handler is registered, EmulatorJS skips its default behavior (downloading the save file).
+
+```javascript
+window.EJS_emulator.on('saveSave', function (data) {
+  // data.save       — Uint8Array of the save file
+  // data.screenshot — screenshot Blob
+  // data.format     — image format string
+  uploadSaveToServer(data.save);
+});
+```
+
+| Property | Type | Description |
+|---|---|---|
+| `save` | `Uint8Array` | Raw save-file bytes |
+| `screenshot` | `Blob` | Screenshot taken at save time |
+| `format` | `string` | Image format of the screenshot |
+
+---
+
+### `loadSave`
+
+Fired when the user clicks the "Load Save File" toolbar button. If **any** handler is registered, EmulatorJS skips its default behavior (file picker).
+
+```javascript
+window.EJS_emulator.on('loadSave', function () {
+  fetchSaveFromServer().then(function (saveBytes) {
+    const path = window.EJS_emulator.gameManager.getSaveFilePath();
+    window.EJS_emulator.gameManager.FS.writeFile(path, new Uint8Array(saveBytes));
+    window.EJS_emulator.gameManager.loadSaveFiles();
+  });
+});
+```
+
+No data is passed to the callback.
+
+---
+
+### `saveSaveFiles`
+
+Added in v4.2.2. Fired every time save files are written to the virtual filesystem — both on manual save and on the automatic fixed-interval save (if configured). The callback receives the current save file contents.
+
+```javascript
+window.EJS_emulator.on('saveSaveFiles', function (saveFile) {
+  // saveFile — Uint8Array of the current save file, or null
+  if (saveFile) {
+    backupSave(saveFile);
+  }
+});
+```
+
+---
+
+### `saveDatabaseLoaded`
+
+Added in v4.2.2. Fired once the `/data/saves` IDBFS filesystem has been mounted and synced. This means save files from previous sessions are available in the virtual filesystem.
+
+```javascript
+window.EJS_emulator.on('saveDatabaseLoaded', function (FS) {
+  // FS — the Emscripten FS object
+  console.log('Save database is ready');
+});
+```
+
+---
+
+### `saveUpdate`
+
+Fired when the save file content changes (detected by hash comparison). This event is **opt-in** — you must call `window.EJS_emulator.enableSaveUpdateEvent()` to activate it, or set `window.EJS_onSaveUpdate` before `loader.js` loads (which calls `enableSaveUpdateEvent()` automatically).
+
+```javascript
+window.EJS_emulator.enableSaveUpdateEvent();
+
+window.EJS_emulator.on('saveUpdate', function (data) {
+  // data.hash       — cyrb53 hash string of the new save file
+  // data.save       — Uint8Array of the save file
+  // data.screenshot — screenshot Blob taken at save time
+  // data.format     — image format string
+  syncToCloud(data);
+});
+```
+
+| Property | Type | Description |
+|---|---|---|
+| `hash` | `string` | Content hash of the save file (changes only when content changes) |
+| `save` | `Uint8Array` | Raw save-file bytes |
+| `screenshot` | `Blob` | Screenshot taken when the save was detected |
+| `format` | `string` | Image format of the screenshot |
+
+<Warning>
+`saveUpdate` fires only when the save file hash differs from the previous save. Calling `enableSaveUpdateEvent()` more than once will register duplicate `saveSaveFiles` listeners. Call it once per emulator instance.
+</Warning>
+
+## Ad-block callback
+
+`window.EJS_adBlocked` is a special callback set up by `loader.js` — it is not part of the `.on()` event system. It is called when the emulator detects that an ad URL has been blocked:
+
+```javascript
+// loader.js wires this up automatically:
+window.EJS_adBlocked = (url, del) => window.EJS_emulator.adBlocked(url, del);
+```
+
+You do not normally need to override this unless you are customizing ad behavior.
+
+## Complete setup example
+
+<CodeGroup>
+
+```html Pre-load registration
+<script>
+  window.EJS_gameUrl = '/roms/zelda.smc';
+  window.EJS_core    = 'snes';
+  window.EJS_player  = '#emulator';
+
+  window.EJS_ready = function () {
+    document.getElementById('spinner').hidden = true;
+  };
+
+  window.EJS_onGameStart = function () {
+    analytics.track('game_started');
+  };
+
+  window.EJS_onSaveUpdate = function (data) {
+    // Fires when save content changes; enableSaveUpdateEvent() called automatically
+    fetch('/api/save', {
+      method: 'POST',
+      body: data.save
+    });
+  };
+</script>
+<script src="data/loader.js"></script>
+```
+
+```javascript Post-load registration
+// Run after loader.js has executed
+window.EJS_emulator.on('saveState', function (data) {
+  const blob = new Blob([data.state]);
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'my-save.state';
+  a.click();
+});
+
+window.EJS_emulator.on('loadState', function () {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.onchange = async function () {
+    const bytes = new Uint8Array(await input.files[0].arrayBuffer());
+    window.EJS_emulator.gameManager.loadState(bytes);
+  };
+  input.click();
+});
+```
+
+</CodeGroup>

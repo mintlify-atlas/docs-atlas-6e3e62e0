@@ -1,0 +1,183 @@
+---
+title: 'Third-party integrations'
+description: 'How to embed EmulatorJS into your own project — CDN, npm package, version pinning, and community integration patterns.'
+---
+
+## Overview
+
+EmulatorJS is a library, not a standalone application. It is designed to be embedded inside other projects: web apps, CMS plugins, Docker-based game servers, and any other environment that can serve HTML files and static assets.
+
+The project provides several distribution channels to make embedding straightforward regardless of your setup.
+
+## Embedding EmulatorJS
+
+Every integration follows the same core pattern:
+
+<Steps>
+  <Step title="Serve the EmulatorJS static assets">
+    The `data/` directory contains the emulator runtime, cores, and styles. These files must be accessible from your web server. You can serve them yourself, pull them from the CDN, or install them via npm.
+  </Step>
+  <Step title="Add a player element to your HTML">
+    EmulatorJS renders into any HTML element you designate as the player. Pass its CSS selector as the first argument to the `EmulatorJS` constructor (via `window.EJS_player`).
+  </Step>
+  <Step title="Set window.EJS_* configuration variables">
+    Set the required config variables (`EJS_gameUrl`, `EJS_core`, `EJS_player`) and any optional ones before loading `loader.js`.
+  </Step>
+  <Step title="Load loader.js">
+    Include `loader.js` as a script tag. It bootstraps the emulator, sets up the instance at `window.EJS_emulator`, and registers any `window.EJS_*` event callbacks you have defined.
+  </Step>
+</Steps>
+
+```html
+<!DOCTYPE html>
+<html>
+<head>
+  <title>My Game</title>
+  <style>
+    #game { width: 800px; height: 600px; }
+  </style>
+</head>
+<body>
+  <div id="game"></div>
+
+  <script>
+    window.EJS_player  = '#game';
+    window.EJS_core    = 'snes';
+    window.EJS_gameUrl = '/roms/my-game.smc';
+    window.EJS_pathtodata = 'https://cdn.emulatorjs.org/stable/data/';
+  </script>
+  <script src="https://cdn.emulatorjs.org/stable/data/loader.js"></script>
+</body>
+</html>
+```
+
+## The public CDN
+
+EmulatorJS maintains a public CDN at `https://cdn.emulatorjs.org`. The CDN serves the full `data/` directory — loader, runtime, cores, and styles — so you do not need to self-host any files to get started.
+
+| Channel | URL | Notes |
+|---|---|---|
+| Latest stable | `https://cdn.emulatorjs.org/stable/data/` | Tracks the latest stable release |
+| Specific version | `https://cdn.emulatorjs.org/v4.2.3/data/` | Pinned to an exact release tag |
+
+<Warning>
+Using the `stable` channel means your integration will automatically pick up new EmulatorJS releases. This is convenient but can break if a release introduces breaking changes. For production deployments, pin to a specific version.
+</Warning>
+
+### Setting the data path
+
+When you load `loader.js` from the CDN, EmulatorJS infers `EJS_pathtodata` from the script's `src` attribute automatically. If you load `loader.js` from a different location (e.g. self-hosted), set `EJS_pathtodata` explicitly:
+
+```html
+<script>
+  window.EJS_pathtodata = 'https://cdn.emulatorjs.org/v4.2.3/data/';
+</script>
+<script src="/your/path/to/loader.js"></script>
+```
+
+## The npm package
+
+EmulatorJS is published to npm as `@emulatorjs/emulatorjs`:
+
+```bash
+npm install @emulatorjs/emulatorjs
+```
+
+The npm package is useful when you want to vendor the assets alongside your own build. After installation, the `data/` directory is available inside `node_modules/@emulatorjs/emulatorjs/`.
+
+```javascript
+// Example: copy data/ to your public directory in a build script
+import { copySync } from 'fs-extra';
+copySync(
+  'node_modules/@emulatorjs/emulatorjs/data',
+  'public/emulatorjs/data'
+);
+```
+
+<Note>
+The npm package's `sideEffects: true` flag means bundlers will not tree-shake it. Import or copy it as static assets rather than attempting to bundle it with your JavaScript.
+</Note>
+
+## Version pinning strategies
+
+<Tabs>
+  <Tab title="CDN (pinned)">
+    Reference a specific version tag in the CDN URL. Check the [GitHub releases page](https://github.com/EmulatorJS/EmulatorJS/releases) for available versions.
+
+    ```html
+    <script>
+      window.EJS_pathtodata = 'https://cdn.emulatorjs.org/v4.2.3/data/';
+    </script>
+    <script src="https://cdn.emulatorjs.org/v4.2.3/data/loader.js"></script>
+    ```
+  </Tab>
+  <Tab title="npm (pinned)">
+    Pin the exact version in `package.json`:
+
+    ```json
+    {
+      "dependencies": {
+        "@emulatorjs/emulatorjs": "4.2.3"
+      }
+    }
+    ```
+
+    Lock files (`package-lock.json` / `yarn.lock`) ensure reproducible installs.
+  </Tab>
+  <Tab title="Self-hosted release ZIP">
+    Download the release ZIP from [GitHub releases](https://github.com/EmulatorJS/EmulatorJS/releases/latest), extract the `data/` folder to your server, and reference it locally. This approach requires no package manager and works in any environment that can serve static files.
+
+    ```html
+    <script>
+      window.EJS_pathtodata = '/emulatorjs/data/';
+    </script>
+    <script src="/emulatorjs/data/loader.js"></script>
+    ```
+  </Tab>
+</Tabs>
+
+## Common integration patterns
+
+### Docker containers
+
+Several community projects wrap EmulatorJS in Docker containers alongside a game library browser. The typical pattern is a container that:
+
+1. Serves the EmulatorJS `data/` directory as static files
+2. Provides an HTTP API or file system for ROM management
+3. Generates the HTML embedding code dynamically per game
+
+EmulatorJS itself does not have a first-party Docker image, but the static-file nature of the library makes it straightforward to add to any web server container.
+
+### CMS and WordPress plugins
+
+CMS plugins generally work by:
+
+1. Enqueuing the EmulatorJS `loader.js` script
+2. Rendering an HTML block with `EJS_*` variables set from post/page metadata (game title, ROM path, core)
+3. Optionally proxying ROM files through the CMS to enforce access control
+
+### iframe embedding
+
+Because EmulatorJS is entirely client-side, it can be served from a separate origin and embedded via an `<iframe>`. This is useful when you want to isolate the emulator from your main page:
+
+```html
+<!-- On your main page -->
+<iframe
+  src="https://emulator.example.com/play?game=zelda&core=nes"
+  width="800"
+  height="600"
+  allowfullscreen
+></iframe>
+```
+
+The embedded page sets `EJS_*` variables from URL parameters and loads `loader.js` normally.
+
+## Official demo
+
+The official EmulatorJS demo is available at [demo.emulatorjs.org](https://demo.emulatorjs.org). It demonstrates a working integration with a variety of systems and is a useful reference for seeing the expected behavior of any given configuration option.
+
+The source for the demo is the `index.html` file in the root of the [EmulatorJS GitHub repository](https://github.com/EmulatorJS/EmulatorJS).
+
+## Community integrations
+
+The EmulatorJS GitHub repository's [issues tracker](https://github.com/EmulatorJS/EmulatorJS/issues) is the primary place where community integration projects are discussed and listed. If you have built an integration — a plugin, a Docker image, a game library app — the issues section is the right place to share it and find other projects built on top of EmulatorJS.

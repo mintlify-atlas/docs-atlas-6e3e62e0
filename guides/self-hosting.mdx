@@ -1,0 +1,140 @@
+---
+title: Self-hosting
+description: Serve EmulatorJS from your own server for full control over assets, versioning, and performance.
+---
+
+Self-hosting gives you complete control over the EmulatorJS files — you choose the version, handle caching, and avoid any dependency on the public CDN.
+
+## Download the files
+
+<Tabs>
+  <Tab title="GitHub release (recommended)">
+    Download the latest release ZIP from [GitHub Releases](https://github.com/EmulatorJS/EmulatorJS/releases/latest) and extract it. The `data/` directory inside the archive is what you need to serve.
+
+    The error message shown at startup also links to the correct ZIP:
+
+    ```text
+    https://cdn.emulatorjs.org/stable/data/emulator.min.zip
+    ```
+
+    Extract its contents into your `data/` folder.
+  </Tab>
+  <Tab title="npm package">
+    ```bash
+    npm install @emulatorjs/emulatorjs
+    ```
+
+    The files are located at `node_modules/@emulatorjs/emulatorjs/data/`.
+  </Tab>
+</Tabs>
+
+## Directory structure
+
+After extracting, your `data/` directory contains:
+
+```
+data/
+├── loader.js            # Entry point — include this in your HTML
+├── emulator.min.js      # Minified emulator (built by npm run minify)
+├── emulator.min.css     # Minified stylesheet
+├── emulator.css         # Source stylesheet
+├── src/                 # Source files (emulator.js, shaders.js, etc.)
+├── cores/               # WebAssembly core files per system
+├── localization/        # Translation JSON files
+└── saves/               # IndexedDB-backed save directory (runtime)
+```
+
+<Note>
+The minified files (`emulator.min.js`, `emulator.min.css`) must be present for production use. If they are missing, the loader falls back to the unminified source files and logs a warning.
+</Note>
+
+## Point EmulatorJS at your data directory
+
+Set `EJS_pathtodata` before loading `loader.js`:
+
+```html
+<script>
+  EJS_player = "#game";
+  EJS_core = "snes";
+  EJS_gameUrl = "/roms/my-game.sfc";
+  EJS_pathtodata = "/emulatorjs/data/";
+</script>
+<script src="/emulatorjs/data/loader.js"></script>
+```
+
+If `EJS_pathtodata` is not set, `loader.js` resolves asset paths relative to its own location automatically.
+
+## Required HTTP headers
+
+Several emulator features — including threading support for certain cores — require `SharedArrayBuffer`, which browsers only expose on cross-origin isolated pages. You must add these response headers to every page that embeds the emulator:
+
+```
+Cross-Origin-Opener-Policy: same-origin
+Cross-Origin-Embedder-Policy: require-corp
+```
+
+<Warning>
+Without these headers, threaded cores such as `ppsspp` (PSP) and `dosbox_pure` (DOS) will not function. The emulator will still run for non-threaded cores, but threading cannot be enabled at all.
+</Warning>
+
+Configure the headers in your web server:
+
+<CodeGroup>
+
+```nginx nginx.conf
+add_header Cross-Origin-Opener-Policy "same-origin";
+add_header Cross-Origin-Embedder-Policy "require-corp";
+```
+
+```apache .htaccess
+Header set Cross-Origin-Opener-Policy "same-origin"
+Header set Cross-Origin-Embedder-Policy "require-corp"
+```
+
+```javascript Express middleware
+app.use((req, res, next) => {
+  res.setHeader("Cross-Origin-Opener-Policy", "same-origin");
+  res.setHeader("Cross-Origin-Embedder-Policy", "require-corp");
+  next();
+});
+```
+
+</CodeGroup>
+
+## Minification
+
+Before deploying to production, minify the source files to reduce load times and bandwidth.
+
+<Steps>
+  <Step title="Install dependencies">
+    From the root of the EmulatorJS repository:
+
+    ```bash
+    npm i
+    ```
+  </Step>
+  <Step title="Run the minifier">
+    ```bash
+    npm run minify
+    ```
+
+    This produces `emulator.min.js` and `emulator.min.css` inside `data/`.
+  </Step>
+  <Step title="Deploy the data/ directory">
+    Copy the entire `data/` directory (including the generated minified files) to your server.
+  </Step>
+</Steps>
+
+<Tip>
+If the minified files are absent at runtime, the loader falls back to unminified source files and prints a detailed message explaining the three ways to resolve the issue.
+</Tip>
+
+## Development server
+
+To run a local development server with live preview:
+
+```bash
+npm run start
+```
+
+Open `http://localhost:8080/` to see the built-in demo page. The development server serves unminified source files so you can inspect and debug the emulator code directly.

@@ -1,0 +1,78 @@
+---
+title: BIOS files
+description: Provide system BIOS files for consoles that require firmware to boot games.
+---
+
+Some consoles cannot start games without a system BIOS — a small firmware image that was originally stored on a chip inside the hardware. EmulatorJS supports loading BIOS files at startup so the emulated system behaves correctly.
+
+## Which systems require a BIOS
+
+The following systems typically need a BIOS file. The exact filename expected varies by core.
+
+| System | EJS core identifier | Common BIOS requirement |
+|--------|--------------------|-----------------------|
+| PlayStation | `psx` | `scph1001.bin` or equivalent |
+| Sega CD | `segaCD` | `bios_CD_U.bin` / `bios_CD_E.bin` / `bios_CD_J.bin` |
+| Sega Saturn | `segaSaturn` | `saturn_bios.bin` |
+| 3DO | `3do` | `panafz10.bin` |
+| Atari 5200 | `atari5200` | `5200.rom` |
+| PC-FX | `pcfx` | `pcfx.rom` |
+| Neo Geo Pocket | `ngp` | — |
+
+<Note>
+Some cores run without a BIOS but may display inaccurate title screens or fail to run certain games. Check the [Cores Documentation](https://emulatorjs.org/docs4devs/cores) for the exact filename required by each core.
+</Note>
+
+## Legal note
+
+BIOS files are copyrighted by their manufacturers. You must provide your own BIOS dumps obtained from hardware you own. EmulatorJS does not distribute BIOS files and has no affiliation with any console manufacturer.
+
+## Providing a BIOS file
+
+Set `EJS_biosUrl` to the URL of your BIOS file before loading `loader.js`:
+
+```html
+<script>
+  EJS_player  = "#game";
+  EJS_core    = "psx";
+  EJS_gameUrl = "/roms/game.bin";
+  EJS_biosUrl = "/bios/scph1001.bin";
+</script>
+<script src="/data/loader.js"></script>
+```
+
+`EJS_biosUrl` accepts the same value types as `EJS_gameUrl`: a URL string, a `Blob`, an `ArrayBuffer`, or a `Uint8Array`.
+
+## Skipping BIOS extraction
+
+By default the emulator tries to extract BIOS files if they are provided as archives. To skip extraction and pass the BIOS file directly to the core as-is, set:
+
+```javascript
+EJS_dontExtractBIOS = true;
+```
+
+This is useful when the core expects a specific archive format, or when you are passing a pre-extracted binary file and do not want the extraction step to interfere.
+
+## Parent ROMs
+
+Some arcade systems (e.g. MAME, FBNeo) use a parent ROM that contains shared assets referenced by the game ROM. Provide the parent ROM with `EJS_gameParentUrl`:
+
+```html
+<script>
+  EJS_player        = "#game";
+  EJS_core          = "arcade";
+  EJS_gameUrl       = "/roms/child-game.zip";
+  EJS_gameParentUrl = "/roms/parent-game.zip";
+</script>
+<script src="/data/loader.js"></script>
+```
+
+## How BIOS files are loaded and cached
+
+When `EJS_biosUrl` is set, `loader.js` passes it to the emulator as `biosUrl`. The emulator downloads the file as a `bios`-type asset and caches it in IndexedDB via the `EmulatorJS-Cache` database alongside core and ROM files.
+
+On subsequent page loads the cached BIOS is used, so the file is not re-downloaded unless the cache is cleared or expires. The cache max age defaults to 7200 minutes (5 days) and can be configured via `EJS_cacheConfig`.
+
+<Tip>
+BIOS files are small and benefit the most from caching. Avoid setting `dontCache` for BIOS downloads.
+</Tip>

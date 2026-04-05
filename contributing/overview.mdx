@@ -1,0 +1,100 @@
+---
+title: "Contributing overview"
+description: "Learn how to contribute to EmulatorJS — code, documentation, translations, and more."
+---
+
+EmulatorJS is a community-driven project and welcomes contributions of all kinds. Whether you want to fix a bug, improve the docs, add a translation, or help upstream with libretro cores, there is a place for you.
+
+## Ways to contribute
+
+<CardGroup cols={2}>
+  <Card title="Code" icon="code" href="https://github.com/EmulatorJS/EmulatorJS/issues">
+    Browse open issues on GitHub and submit pull requests to fix bugs or add features.
+  </Card>
+  <Card title="Documentation" icon="book" href="https://github.com/EmulatorJS/emulatorjs.org">
+    Improve or expand the documentation site on its own GitHub repository.
+  </Card>
+  <Card title="Translations" icon="language">
+    Add or update localization files so EmulatorJS works for users around the world.
+  </Card>
+  <Card title="Libretro cores" icon="microchip" href="https://retroarch.com">
+    Help develop the underlying emulator cores at libretro that power EmulatorJS.
+  </Card>
+</CardGroup>
+
+## Code of conduct
+
+EmulatorJS follows a code of conduct to keep the community welcoming and inclusive. Please read it before participating in any discussion or submitting contributions.
+
+## Reporting bugs
+
+Good bug reports help maintainers reproduce and fix issues quickly. When opening an [issue on GitHub](https://github.com/EmulatorJS/EmulatorJS/issues), include the following:
+
+<Steps>
+  <Step title="Specify your version">
+    State which build you are using: **Stable**, **Latest**, or **Nightly**.
+
+    | Version  | Description                                                                 |
+    | -------- | --------------------------------------------------------------------------- |
+    | Stable   | Current release. Code and cores are tested before release.                  |
+    | Latest   | Latest code, stable cores. Updated with every `main` branch push.           |
+    | Nightly  | Latest code and latest cores. Not recommended for production.               |
+  </Step>
+  <Step title="Attach browser console logs">
+    Open your browser's developer tools (usually `F12`), go to the **Console** tab, reproduce the issue, and paste any errors or warnings into the issue.
+  </Step>
+  <Step title="Describe reproduction steps">
+    List the exact steps needed to reproduce the problem, including the system/core being used and the browser and OS version.
+  </Step>
+</Steps>
+
+<Warning>
+  Issues without a version label and console logs are harder to diagnose and may be closed without action.
+</Warning>
+
+## Pull request process
+
+<Steps>
+  <Step title="Fork and branch">
+    Fork the repository on GitHub and create a feature branch from `main`.
+  </Step>
+  <Step title="Make your changes">
+    Keep commits focused. One logical change per commit makes reviews easier.
+  </Step>
+  <Step title="Disable auto-formatting">
+    See the [VS Code settings](#vs-code-settings) section below before committing — mismatched formatting causes noisy diffs.
+  </Step>
+  <Step title="Open a pull request">
+    Open a PR against the `main` branch. Describe what changed and why. Link any related issues.
+  </Step>
+</Steps>
+
+## VS Code settings
+
+By default, VS Code applies formatting that is inconsistent with the style used by this project. Disable the formatter for this repository only by creating `.vscode/settings.json` (if it does not already exist) in the project root and adding the following:
+
+```json .vscode/settings.json
+{
+    "diffEditor.ignoreTrimWhitespace": false,
+    "editor.formatOnPaste": false,
+    "editor.formatOnSave": false,
+    "editor.formatOnSaveMode": "modifications"
+}
+```
+
+<Note>
+  These settings apply only to this workspace and do not affect your global VS Code preferences.
+</Note>
+
+## Community
+
+Join the EmulatorJS Discord server to ask questions, share ideas, and connect with other contributors and users.
+
+[![Discord](https://invidget.switchblade.xyz/6akryGkETU)](https://discord.gg/6akryGkETU)
+
+## Supporting the project
+
+EmulatorJS is free and ad-free. If you want to support development financially:
+
+- [Donate to EmulatorJS on Patreon](https://www.patreon.com/EmulatorJS)
+- [Donate to libretro](https://retroarch.com/index.php?page=donate)

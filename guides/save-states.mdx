@@ -1,0 +1,150 @@
+---
+title: Save states
+description: Manage save states and battery-backed save files with EmulatorJS events and configuration options.
+---
+
+EmulatorJS supports two distinct forms of game saving:
+
+- **Save states** — a snapshot of the entire emulator memory at a point in time. Fast to create and restore; stored as `.state` files.
+- **Save files (SRAM)** — battery-backed save data that a game writes to its own memory, mirroring what real hardware does. Stored as `.srm` files.
+
+Both are managed separately and have their own APIs.
+
+## Loading a save state on startup
+
+To restore a save state automatically when the emulator starts, provide a URL with `EJS_loadStateURL`:
+
+```html
+<script>
+  EJS_player       = "#game";
+  EJS_core         = "gba";
+  EJS_gameUrl      = "/roms/game.gba";
+  EJS_loadStateURL = "/states/my-save.state";
+</script>
+<script src="/data/loader.js"></script>
+```
+
+`EJS_loadStateURL` accepts the same value types as `EJS_gameUrl`: a URL string, a `Blob`, an `ArrayBuffer`, or a `Uint8Array`.
+
+## Save state events
+
+Intercept save and load state actions with `EJS_onSaveState` and `EJS_onLoadState`. When these callbacks are registered, the default browser download/upload behaviour is suppressed and your code handles the data instead.
+
+```javascript
+// Called when the user clicks "Save State"
+EJS_onSaveState = function({ state, screenshot, format }) {
+  // state     — Uint8Array of the save state binary
+  // screenshot — Uint8Array of the screenshot taken at save time
+  // format    — image format string (e.g. "png")
+  myServer.uploadState(state, screenshot);
+};
+
+// Called when the user clicks "Load State"
+// Return a Uint8Array to load it, or handle loading yourself
+EJS_onLoadState = function() {
+  // If this function is registered, the default file picker is suppressed.
+  // Load and apply state data via your own mechanism.
+};
+```
+
+Both handlers are registered via `EJS_emulator.on(event, callback)` internally by `loader.js`.
+
+## Save file (SRAM) events
+
+Battery save files have their own set of events that fire when the game reads or writes SRAM.
+
+| Event handler | When it fires |
+|---------------|---------------|
+| `EJS_onSaveSave` | User clicks the "Save File" button in the toolbar |
+| `EJS_onLoadSave` | User clicks the "Load Save File" button in the toolbar |
+| `EJS_onSaveUpdate` | Save data changes (requires `enableSaveUpdateEvent()`) |
+
+### EJS_onSaveSave and EJS_onLoadSave
+
+These work the same as the save state equivalents — registering them suppresses the default file picker:
+
+```javascript
+EJS_onSaveSave = function({ save, screenshot, format }) {
+  // save       — Uint8Array of the SRAM binary
+  // screenshot — Uint8Array screenshot at time of save
+  // format     — image format string
+  myServer.uploadSave(save, screenshot);
+};
+
+EJS_onLoadSave = function() {
+  // Default load-from-disk UI is suppressed.
+  // Handle loading the save file yourself.
+};
+```
+
+### EJS_onSaveUpdate (live save tracking)
+
+`EJS_onSaveUpdate` fires automatically whenever the save data changes content — useful for syncing save files to a server without requiring user interaction.
+
+```javascript
+EJS_onSaveUpdate = function({ hash, save, screenshot, format }) {
+  // hash       — a content hash of the save file (changes only when content changes)
+  // save       — Uint8Array of the current SRAM binary
+  // screenshot — Uint8Array screenshot at the moment of change
+  // format     — image format string
+  myServer.syncSave(hash, save, screenshot);
+};
+```
+
+`loader.js` automatically calls `EJS_emulator.enableSaveUpdateEvent()` when this handler is set. The event only fires when the save file content changes (hashes are compared), preventing redundant uploads.
+
+## Save file system events
+
+Two lower-level events expose the IndexedDB-backed save filesystem:
+
+| Event | When it fires |
+|-------|---------------|
+| `saveSaveFiles` | Save files are written to the virtual filesystem |
+| `saveDatabaseLoaded` | The `/data/saves` directory has been mounted and is ready |
+
+These fire on the `EJS_emulator` instance:
+
+```javascript
+EJS_emulator.on("saveDatabaseLoaded", (fs) => {
+  // fs — the Emscripten FS instance
+  console.log("Save database is ready");
+});
+
+EJS_emulator.on("saveSaveFiles", (saveFile) => {
+  console.log("Save files updated");
+});
+```
+
+## Automatic save interval
+
+Use `EJS_fixedSaveInterval` to automatically write save files at a fixed interval (in milliseconds). This runs in the background without user interaction:
+
+```html
+<script>
+  EJS_fixedSaveInterval = 300000; // save every 5 minutes
+</script>
+```
+
+Setting the value to `0` or `NaN` disables the interval. The interval is cleared and reset if you call `EJS_emulator.startSaveInterval(period)` directly.
+
+<Tip>
+The automatic save interval writes SRAM (battery save) data, not save states. Use it to prevent SRAM loss if a user closes the tab without manually saving.
+</Tip>
+
+## Disabling local storage
+
+By default EmulatorJS stores settings and save state slots in `localStorage`. To opt out:
+
+```html
+<script>
+  EJS_disableLocalStorage = true;
+</script>
+```
+
+<Note>
+`EJS_disableLocalStorage` disables settings persistence, not IndexedDB save files. SRAM data is stored in IndexedDB and is unaffected by this option.
+</Note>
+
+## Save state slots
+
+The settings menu exposes nine numbered save state slots (1–9). The slot number is stored in `localStorage` under the key `save-state-slot` (per game). Slot-based saves are written to IndexedDB via the `EmulatorJS-states` database.

@@ -1,0 +1,264 @@
+---
+title: "Display"
+description: "Configure the emulator's visual appearance, including accent colors, background, video rotation, shaders, and screen capture."
+---
+
+EmulatorJS exposes several options that control how the emulator looks before and during gameplay, as well as how the canvas and surrounding UI are styled.
+
+## Accent color
+
+<ParamField path="EJS_color" type="string">
+  Hex color code for the emulator's accent color. Applied as the CSS custom property `--ejs-primary-color` and affects toolbar highlights, selected options, and interactive elements. Supports 3-digit and 6-digit hex values.
+
+  Defaults to `#1aafff` when not set or when an invalid value is provided.
+
+  ```javascript
+  EJS_color = "#e74c3c"; // Red accent
+  EJS_color = "#2ecc71"; // Green accent
+  EJS_color = "#9b59b6"; // Purple accent
+  ```
+
+  <Tip>
+    Use a color that contrasts well against both light and dark backgrounds for legibility.
+  </Tip>
+</ParamField>
+
+## Background
+
+These options control the area behind the game canvas, visible while the game is loading and on the start screen. The background is removed automatically once the game starts.
+
+<ParamField path="EJS_backgroundImage" type="string">
+  URL of an image to display as the background behind the start button and loading screen. When set, the emulator container gets a styled background with the image. The background is removed when the game starts.
+
+  ```javascript
+  EJS_backgroundImage = "/images/game-cover.jpg";
+  ```
+</ParamField>
+
+<ParamField path="EJS_backgroundBlur" type="boolean" default="false">
+  When `true`, applies a CSS blur filter to the background image. Requires `EJS_backgroundImage` to be set.
+
+  ```javascript
+  EJS_backgroundImage = "/images/cover.jpg";
+  EJS_backgroundBlur  = true;
+  ```
+</ParamField>
+
+<ParamField path="EJS_backgroundColor" type="string" default='"rgb(51, 51, 51)"'>
+  CSS color value for the solid background color of the emulator container. Shown behind the background image (if any) and when no image is set.
+
+  ```javascript
+  EJS_backgroundColor = "#1a1a2e";
+  EJS_backgroundColor = "rgb(20, 20, 20)";
+  ```
+</ParamField>
+
+### Background example
+
+```javascript
+EJS_backgroundImage   = "https://example.com/artwork/zelda-cover.jpg";
+EJS_backgroundBlur    = true;
+EJS_backgroundColor   = "#0d0d0d";
+EJS_alignStartButton  = "center";
+```
+
+## Start button alignment
+
+<ParamField path="EJS_alignStartButton" type="string" default='"bottom"'>
+  Controls the vertical position of the "Start Game" button relative to the emulator container.
+
+  | Value | Position |
+  |-------|----------|
+  | `"bottom"` | Near the bottom of the container (default) |
+  | `"top"` | Near the top of the container |
+  | `"center"` | Vertically centered |
+
+  ```javascript
+  EJS_alignStartButton = "center";
+  ```
+</ParamField>
+
+## Video rotation
+
+<ParamField path="EJS_videoRotation" type="number" default="0">
+  Rotates the game canvas clockwise by the specified number of degrees. Useful for arcade games designed to be displayed in a vertical cabinet orientation.
+
+  | Value | Rotation |
+  |-------|----------|
+  | `0` | No rotation (default) |
+  | `1` | 90° clockwise |
+  | `2` | 180° |
+  | `3` | 270° clockwise (90° counter-clockwise) |
+
+  ```javascript
+  EJS_videoRotation = 1; // 90 degrees clockwise
+  ```
+
+  <Note>
+    The rotation values are indices, not degree values. `1` means 90°, `2` means 180°, and `3` means 270°.
+  </Note>
+</ParamField>
+
+## Shaders
+
+EmulatorJS ships with built-in GLSL shaders selectable from the settings menu. You can add custom shaders using `EJS_shaders`.
+
+<ParamField path="EJS_shaders" type="object">
+  An object of additional shader definitions merged with the built-in shaders. Each key is the shader name shown in the settings menu; each value is either a shader string or a shader definition object.
+
+  The built-in shaders include: `2xScaleHQ.glslp`, `4xScaleHQ.glslp`, `crt-easymode.glslp`, `crt-aperture.glslp`, `crt-geom.glslp`, `crt-mattias.glslp`, `crt-beam`, `crt-caligari`, `crt-lottes`, `crt-zfast`, `crt-yeetron`, `bicubic`, `mix-frames`, and `sabr`.
+
+  <Tabs>
+    <Tab title="Simple shader string">
+      ```javascript
+      EJS_shaders = {
+        "my-simple-shader": "shaders = 1\n\nshader0 = my-shader.glsl\n"
+      };
+      ```
+    </Tab>
+    <Tab title="Multi-file shader object">
+      ```javascript
+      EJS_shaders = {
+        "my-crt-shader": {
+          shader: {
+            type: "text",
+            value: "shaders = 1\n\nshader0 = my-crt.glsl\nfilter_linear0 = false\n"
+          },
+          resources: [
+            {
+              name: "my-crt.glsl",
+              type: "text",   // "text" or "base64"
+              value: "/* GLSL shader code here */"
+            }
+          ]
+        }
+      };
+      ```
+    </Tab>
+    <Tab title="Base64-encoded shader">
+      ```javascript
+      EJS_shaders = {
+        "my-shader": {
+          shader: {
+            type: "text",
+            value: "shaders = 1\n\nshader0 = effect.glsl\n"
+          },
+          resources: [
+            {
+              name: "effect.glsl",
+              type: "base64",
+              value: btoa("/* your GLSL code */")
+            }
+          ]
+        }
+      };
+      ```
+    </Tab>
+  </Tabs>
+
+  Shaders are merged at startup using:
+
+  ```javascript
+  // From setup.js:
+  this.EJS.shaders = Object.assign({}, EJS_SHADERS, config.additionalShaders || {});
+  ```
+
+  This means your custom shaders are available alongside the built-in ones.
+
+  <Warning>
+    Custom shaders must be valid GLSL and follow the RetroArch `.glslp` format. Invalid shaders will fail silently or cause rendering errors.
+  </Warning>
+</ParamField>
+
+## Browser mode
+
+<ParamField path="EJS_browserMode" type="string | number">
+  Forces the emulator into mobile or desktop rendering mode regardless of the actual device.
+
+  | Value | Effect |
+  |-------|--------|
+  | `"auto"` or not set | Auto-detect from user agent and touch API |
+  | `"mobile"` or `1` | Force mobile UI (virtual gamepad shown) |
+  | `"desktop"` or `2` | Force desktop UI (virtual gamepad hidden) |
+
+  ```javascript
+  EJS_browserMode = "desktop"; // Always show desktop UI
+  ```
+
+  This affects virtual gamepad visibility and how touch events are handled.
+</ParamField>
+
+## Screen capture
+
+<ParamField path="EJS_screenCapture" type="object">
+  Controls screenshot and video recording behavior. All sub-options are optional; unset values use defaults.
+
+  ```javascript
+  EJS_screenCapture = {
+    photo: {
+      source: "canvas",   // "canvas" or "retroarch"
+      format: "png",      // image format
+      upscale: 2          // pixel upscale factor
+    },
+    video: {
+      format: "detect",   // auto-select container
+      fps: 60,
+      videoBitrate: 5 * 1024 * 1024,  // 5 Mbps
+      audioBitrate: 192 * 1024         // 192 kbps
+    }
+  };
+  ```
+
+  The emulator initializes these with defaults in the constructor:
+
+  ```javascript
+  // From emulator.js constructor:
+  this.capture.photo.source   = ["canvas", "retroarch"].includes(source) ? source : "canvas";
+  this.capture.photo.format   = (typeof format === "string") ? format : "png";
+  this.capture.photo.upscale  = (typeof upscale === "number") ? upscale : 1;
+  this.capture.video.format   = (typeof format === "string") ? format : "detect";
+  this.capture.video.fps      = (typeof fps === "number") ? fps : 30;
+  this.capture.video.videoBitrate = (typeof vbr === "number") ? vbr : 2.5 * 1024 * 1024;
+  this.capture.video.audioBitrate = (typeof abr === "number") ? abr : 192 * 1024;
+  ```
+</ParamField>
+
+## Complete example
+
+```html
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    #game { width: 640px; height: 480px; }
+  </style>
+</head>
+<body>
+  <div id="game"></div>
+
+  <script>
+    EJS_player           = "#game";
+    EJS_gameUrl          = "/roms/donkey-kong.zip";
+    EJS_core             = "arcade";
+    EJS_pathtodata       = "/data/";
+
+    // Rotate for a vertical arcade cabinet
+    EJS_videoRotation    = 1;
+
+    // Style the loading screen
+    EJS_backgroundImage  = "/artwork/donkey-kong.jpg";
+    EJS_backgroundBlur   = true;
+    EJS_backgroundColor  = "#000000";
+    EJS_alignStartButton = "center";
+    EJS_color            = "#f39c12";
+
+    // CRT look by default
+    // (user can still change it in settings)
+    EJS_screenCapture = {
+      photo: { upscale: 2 }
+    };
+  </script>
+  <script src="/data/loader.js"></script>
+</body>
+</html>
+```

@@ -1,0 +1,105 @@
+---
+title: Cheats
+description: Preload cheat codes at startup or let users add and toggle cheats through the built-in cheat menu.
+---
+
+EmulatorJS supports cheat codes through two complementary mechanisms: preloading a list of cheats programmatically, and loading a cheat database from a JSON file that populates the in-game cheat picker.
+
+## Preloading cheats with EJS_cheats
+
+Pass an array of `[description, code]` pairs to `EJS_cheats` before loading `loader.js`. Each entry is a two-element array where:
+
+- `[0]` is the human-readable description (displayed in the cheat menu)
+- `[1]` is the cheat code string
+
+```html
+<script>
+  EJS_player  = "#game";
+  EJS_core    = "gba";
+  EJS_gameUrl = "/roms/game.gba";
+
+  EJS_cheats = [
+    ["Infinite Lives", "83000B2C 0063"],
+    ["Max Score",      "83000B30 FFFF"]
+  ];
+</script>
+<script src="/data/loader.js"></script>
+```
+
+Cheats preloaded this way are marked as `is_permanent: true` internally, meaning they cannot be deleted through the UI — only toggled on or off.
+
+<Note>
+Preloaded cheats are added to the cheat list but are **disabled by default** (`checked: false`). Users must enable them through the cheat menu, or you can apply them at runtime through the in-game UI.
+</Note>
+
+## Cheat database with EJS_cheatPath
+
+`EJS_cheatPath` points to a directory that contains per-system cheat JSON files. The emulator builds the filename from the system identifier:
+
+```
+{EJS_cheatPath}/{system}.json
+```
+
+For example, if `EJS_cheatPath` is `/cheats/` and the system is `gba`, the emulator will fetch `/cheats/gba.json`.
+
+```html
+<script>
+  EJS_player    = "#game";
+  EJS_core      = "gba";
+  EJS_gameUrl   = "/roms/game.gba";
+  EJS_cheatPath = "/cheats/";
+</script>
+<script src="/data/loader.js"></script>
+```
+
+### Cheat database format
+
+The cheat database JSON file is a plain object keyed by game name. Each game maps to an array of cheat objects with `desc` and `code` properties:
+
+```json
+{
+  "My Game (USA)": [
+    { "desc": "Infinite Lives", "code": "83000B2C 0063" },
+    { "desc": "Max Score",      "code": "83000B30 FFFF" }
+  ],
+  "Another Game (USA)": [
+    { "desc": "Unlock All Levels", "code": "DEADBEEF 0001" }
+  ]
+}
+```
+
+The game names in the JSON are matched against the current game name as reported by the emulator. The cheat picker dropdown in the UI populates from this file.
+
+<Tip>
+Game names in the cheat database must match the ROM's internal name exactly. If no match is found for the current game, the cheat picker remains empty but manual code entry still works.
+</Tip>
+
+## Using the cheat menu
+
+The cheat menu is opened by clicking the gamepad icon in the toolbar (or the dedicated cheat button, if visible). From there, users can:
+
+1. **Select a game** — populates cheats from the database if `EJS_cheatPath` is configured.
+2. **Pick a cheat from the dropdown** — fills in the code and description fields.
+3. **Enter a code manually** — paste any code directly into the text area.
+4. **Add the cheat** — appends it to the active list with a toggle.
+5. **Toggle cheats on/off** — each cheat in the list has an enable/disable switch.
+6. **Delete a cheat** — removes non-permanent cheats from the list.
+
+<Note>
+Some cheat types require a game restart to take effect when disabled. The cheat menu displays a note about this.
+</Note>
+
+## Runtime cheat management
+
+Cheats are stored in the `EJS_emulator.cheats` array. Each entry has the shape:
+
+```javascript
+{
+  desc: "Infinite Lives",  // description string
+  code: "83000B2C 0063",   // cheat code string
+  checked: false,           // whether the cheat is active
+  is_permanent: true        // true for EJS_cheats entries; false for user-added
+}
+```
+
+You can inspect or modify this array at runtime after the emulator has started, though changes should be applied through `EJS_emulator.cheatChanged(checked, code, index)` to ensure the core is updated correctly.

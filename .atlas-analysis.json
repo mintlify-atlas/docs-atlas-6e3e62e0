@@ -1,0 +1,109 @@
+{
+  "projectType": "sdk-library",
+  "projectName": "EmulatorJS",
+  "projectDescription": "A self-hosted JavaScript library that brings RetroArch-powered emulation to the web browser, supporting 30+ classic gaming systems.",
+  "theme": "palm",
+  "primaryColor": "#040404",
+  "lightColor": null,
+  "darkColor": null,
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "quickstart",
+              "supported-systems"
+            ]
+          },
+          {
+            "group": "Configuration",
+            "pages": [
+              "configuration/basic-options",
+              "configuration/controls",
+              "configuration/display",
+              "configuration/netplay",
+              "configuration/localization"
+            ]
+          },
+          {
+            "group": "Guides",
+            "pages": [
+              "guides/self-hosting",
+              "guides/cdn-integration",
+              "guides/bios-files",
+              "guides/save-states",
+              "guides/cheats",
+              "guides/shaders"
+            ]
+          },
+          {
+            "group": "Advanced",
+            "pages": [
+              "advanced/caching",
+              "advanced/events",
+              "advanced/virtual-gamepad",
+              "advanced/third-party-integrations"
+            ]
+          },
+          {
+            "group": "Contributing",
+            "pages": [
+              "contributing/overview",
+              "contributing/building",
+              "contributing/changelog"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "30+ emulated gaming systems via RetroArch/libretro cores",
+    "CDN-hosted or self-hosted deployment options",
+    "Configurable via simple window.EJS_* global variables",
+    "Virtual gamepad support for mobile browsers",
+    "Built-in netplay (multiplayer) via Socket.IO",
+    "IndexedDB-based caching for ROMs, cores, and BIOS files",
+    "Save state and save file management",
+    "Shader support (CRT, ScaleHQ, etc.)",
+    "Cheat code support",
+    "20+ language localizations",
+    "Screen capture and video rotation",
+    "Stable, Latest, and Nightly release channels"
+  ],
+  "publicApiSurface": [
+    "window.EJS_player — CSS selector for the emulator container element",
+    "window.EJS_gameUrl — URL or File object of the ROM to load",
+    "window.EJS_core — Emulation core/system identifier (e.g. 'nes', 'snes', 'gba')",
+    "window.EJS_pathtodata — Path to the EmulatorJS data/ directory",
+    "window.EJS_biosUrl — URL or File object of the required BIOS file",
+    "window.EJS_gameName — Display name of the game",
+    "window.EJS_color — UI accent color (hex string)",
+    "window.EJS_startOnLoaded — Auto-start emulation when loaded (boolean)",
+    "window.EJS_fullscreenOnLoaded — Auto-enter fullscreen when loaded (boolean)",
+    "window.EJS_volume — Initial volume level (0.0–1.0)",
+    "window.EJS_defaultControls — Default controller button mappings",
+    "window.EJS_Buttons — Button visibility/customization options",
+    "window.EJS_VirtualGamepadSettings — Virtual gamepad configuration",
+    "window.EJS_netplayServer — WebSocket URL of the netplay server",
+    "window.EJS_netplayICEServers — ICE servers for WebRTC netplay",
+    "window.EJS_cacheConfig — Cache configuration object {enabled, cacheMaxSizeMB, cacheMaxAgeMins}",
+    "window.EJS_cheats — Array of cheat codes to preload",
+    "window.EJS_loadStateURL — URL of a save state to load on start",
+    "window.EJS_language — Language code for UI localization",
+    "window.EJS_shaders — Additional shader definitions",
+    "window.EJS_backgroundImage — Background image URL for the emulator UI",
+    "window.EJS_hideSettings — Array of settings keys to hide from the settings menu",
+    "window.EJS_ready — Callback fired when emulator is ready",
+    "window.EJS_onGameStart — Callback fired when game starts",
+    "window.EJS_onLoadState — Callback fired when a state is loaded",
+    "window.EJS_onSaveState — Callback fired when a state is saved",
+    "window.EJS_onSaveUpdate — Callback fired when save data is updated",
+    "window.EJS_emulator.on(event, callback) — Register event listener on EmulatorJS instance",
+    "window.EJS_emulator.enableSaveUpdateEvent() — Enable save update events"
+  ]
+}

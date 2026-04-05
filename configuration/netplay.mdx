@@ -1,0 +1,239 @@
+---
+title: "Netplay"
+description: "Set up multiplayer over the network using Socket.IO signaling and WebRTC peer-to-peer streams."
+---
+
+EmulatorJS includes a built-in netplay system that lets players join shared game sessions over the internet. The host streams emulator frames to guests via WebRTC, with Socket.IO handling room creation and signaling.
+
+## How netplay works
+
+<Steps>
+  <Step title="Host creates a room">
+    The host player opens the netplay dialog and creates a room. The emulator connects to your Socket.IO server and registers the room under the current `EJS_gameID`.
+  </Step>
+  <Step title="Guests browse and join">
+    Guests see a list of available rooms for the same game ID. Selecting a room initiates a WebRTC connection through ICE negotiation.
+  </Step>
+  <Step title="Stream begins">
+    Once the WebRTC peer connection is established, the host streams rendered frames to the guest. The guest sends controller input back to the host.
+  </Step>
+</Steps>
+
+## Requirements
+
+<Warning>
+  Netplay requires `SharedArrayBuffer` to be available, which means your page must be served with these HTTP headers:
+
+  ```
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Embedder-Policy: require-corp
+  ```
+
+  Without these headers, threads and netplay will not function, and the emulator will show an error.
+</Warning>
+
+You also need:
+- A running Socket.IO server (see [EmulatorJS netplay server](https://github.com/EmulatorJS/netplay))
+- Optionally a TURN server for NAT traversal (highly recommended for production)
+
+## Configuration options
+
+<ParamField path="EJS_netplayServer" type="string">
+  WebSocket URL of your Socket.IO signaling server. This is the base URL — the emulator appends paths like `/list` and connects using Socket.IO.
+
+  ```javascript
+  EJS_netplayServer = "https://netplay.example.com";
+  ```
+
+  The value is mapped via `loader.js` to `config.netplayUrl` inside the emulator. Rooms for the current game are listed at:
+
+  ```javascript
+  // Room listing (from emulator.js):
+  const response = await fetch(netplayUrl + "/list?domain=" + window.location.host + "&game_id=" + gameId);
+  ```
+</ParamField>
+
+<ParamField path="EJS_netplayICEServers" type="object[]">
+  Array of WebRTC ICE server configurations used during peer connection setup. Follows the standard `RTCIceServer` format.
+
+  ```javascript
+  EJS_netplayICEServers = [
+    // Public STUN server (no authentication needed)
+    { urls: "stun:stun.l.google.com:19302" },
+
+    // TURN server (required for users behind strict NATs)
+    {
+      urls: "turn:turn.example.com:3478",
+      username: "user",
+      credential: "password"
+    }
+  ];
+  ```
+
+  The ICE servers are passed directly to the `RTCPeerConnection` constructor:
+
+  ```javascript
+  // From emulator.js:
+  const iceServers = this.config.netplayICEServers || window.EJS_netplayICEServers || [];
+  // Used during WebRTC setup:
+  new RTCPeerConnection({ iceServers: this.config.netplayICEServers });
+  ```
+
+  <Warning>
+    Without a TURN server, clients behind symmetric NATs cannot connect. The emulator logs a warning at startup when no TURN server is configured:
+
+    ```
+    WARNING: No TURN addresses are configured! Many clients may fail to connect!
+    ```
+
+    This warning appears in the console when `EJS_DEBUG_XX = true` and no ICE server URL starts with `turn:`.
+  </Warning>
+</ParamField>
+
+<ParamField path="EJS_gameID" type="number" required>
+  A numeric ID that uniquely identifies the game. Netplay uses this to group rooms — only players with the same `EJS_gameID` see each other's rooms.
+
+  ```javascript
+  EJS_gameID = 101;
+  ```
+
+  <Note>
+    `EJS_gameID` must be a **number**, not a string. The emulator checks `typeof this.config.gameId !== "number"` and disables netplay if the type is wrong.
+  </Note>
+</ParamField>
+
+## ICE server configuration examples
+
+<AccordionGroup>
+  <Accordion title="STUN only (development)">
+    ```javascript
+    EJS_netplayICEServers = [
+      { urls: "stun:stun.l.google.com:19302" },
+      { urls: "stun:stun1.l.google.com:19302" }
+    ];
+    ```
+
+    Works for most peer-to-peer connections on the same network or when users are not behind strict NATs. Not reliable for production across the open internet.
+  </Accordion>
+
+  <Accordion title="STUN + TURN (production)">
+    ```javascript
+    EJS_netplayICEServers = [
+      { urls: "stun:stun.example.com:3478" },
+      {
+        urls: [
+          "turn:turn.example.com:3478",
+          "turn:turn.example.com:3478?transport=tcp"
+        ],
+        username: "emulatorjs",
+        credential: "your-secret"
+      }
+    ];
+    ```
+
+    The `transport=tcp` fallback helps users whose networks block UDP. Always provide at least one TURN server for production deployments.
+  </Accordion>
+
+  <Accordion title="Coturn server">
+    If you run [coturn](https://github.com/coturn/coturn), configure it like this:
+
+    ```javascript
+    EJS_netplayICEServers = [
+      {
+        urls: "stun:your-coturn-server.example.com:3478"
+      },
+      {
+        urls: "turn:your-coturn-server.example.com:3478",
+        username: "your-coturn-user",
+        credential: "your-coturn-password"
+      }
+    ];
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Complete setup example
+
+```html
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    #game { width: 800px; height: 600px; }
+  </style>
+</head>
+<body>
+  <div id="game"></div>
+
+  <script>
+    EJS_player       = "#game";
+    EJS_gameUrl      = "/roms/street-fighter.zip";
+    EJS_core         = "arcade";
+    EJS_pathtodata   = "/data/";
+    EJS_gameName     = "Street Fighter II";
+
+    // Required for netplay
+    EJS_gameID       = 200;
+    EJS_threads      = true;  // Netplay requires SharedArrayBuffer
+
+    // Netplay server
+    EJS_netplayServer = "https://netplay.example.com";
+
+    // ICE servers for WebRTC
+    EJS_netplayICEServers = [
+      { urls: "stun:stun.l.google.com:19302" },
+      {
+        urls: "turn:turn.example.com:3478",
+        username: "ejs",
+        credential: "secret123"
+      }
+    ];
+  </script>
+  <script src="/data/loader.js"></script>
+</body>
+</html>
+```
+
+## Hosting a netplay server
+
+The official netplay signaling server is available at [github.com/EmulatorJS/netplay](https://github.com/EmulatorJS/netplay). It is a Node.js + Socket.IO application.
+
+```bash
+git clone https://github.com/EmulatorJS/netplay
+cd netplay
+npm install
+npm start
+```
+
+The server handles room listing and WebRTC signaling. It does not relay game data — that goes directly peer-to-peer through WebRTC.
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Netplay button is greyed out or missing">
+    Check that:
+    1. `EJS_gameID` is set to a number (not a string or `undefined`).
+    2. `EJS_netplayServer` is set to a reachable URL.
+    3. The page is served with `COOP`/`COEP` headers.
+  </Accordion>
+
+  <Accordion title="Guests can't connect">
+    Add a TURN server to `EJS_netplayICEServers`. Most connection failures between users on different networks are caused by missing TURN relay servers.
+  </Accordion>
+
+  <Accordion title="SharedArrayBuffer not available">
+    The browser console will show:
+
+    ```
+    Threads is set to true, but the SharedArrayBuffer function is not exposed.
+    Threads requires 2 headers to be set when sending your html page.
+    ```
+
+    Add these headers to your web server response:
+
+    ```
+    Cross-Origin-Opener-Policy: same-origin
+    Cross-Origin-Embedder-Policy: require-corp
+    ```
+  </Accordion>
+</AccordionGroup>

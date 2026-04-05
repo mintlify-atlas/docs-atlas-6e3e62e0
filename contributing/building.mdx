@@ -1,0 +1,145 @@
+---
+title: "Building and development"
+description: "Set up a local development environment, run the dev server, minify assets, and create release archives."
+---
+
+## Prerequisites
+
+- [Node.js](https://nodejs.org/en/download/) (v18 or later recommended)
+- npm (included with Node.js)
+
+## Install dependencies
+
+Run this once after cloning the repository:
+
+```bash
+npm install
+```
+
+This installs the required runtime and development packages, including `http-server`, `rollup`, `terser`, `clean-css`, `jsdoc`, and vendor libraries such as `socket.io` and `nipplejs`.
+
+## Development server
+
+```bash
+npm run start
+```
+
+Starts a local HTTP server at [http://localhost:8080](http://localhost:8080) using `http-server`. Open this URL in your browser to use the built-in demo page.
+
+<Warning>
+  Some EmulatorJS features — such as threaded cores and `SharedArrayBuffer`-based save states — require specific HTTP response headers. Your server must send:
+
+  ```
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Embedder-Policy: require-corp
+  ```
+
+  These headers enable `SharedArrayBuffer` in the browser. Without them, threading-dependent cores will not load correctly. The built-in `npm run start` server does not set these headers by default; configure a reverse proxy or custom server if you need them locally.
+</Warning>
+
+## Minification
+
+```bash
+npm run minify
+```
+
+Minifies and bundles the JavaScript and CSS assets for production use. The script (`minify/minify.js`) performs two operations:
+
+1. **JavaScript** — uses [Rollup](https://rollupjs.org) with the `@rollup/plugin-terser` plugin to bundle `data/src/emulator.js` into a single minified ES module. Output: `data/emulator.min.js` (with source map).
+2. **CSS** — uses `@node-minify/clean-css` to minify `data/emulator.css`. Output: `data/emulator.min.css`.
+
+<Tip>
+  Always run `npm run minify` before deploying to a production server to reduce load times and bandwidth usage.
+</Tip>
+
+## Build script
+
+```bash
+npm run build
+```
+
+Creates versioned release archives in the `dist/` directory. The script reads the current version from `package.json` and produces two files in parallel:
+
+| Output file         | Format |
+| ------------------- | ------ |
+| `dist/<version>.7z` | 7-Zip  |
+| `dist/<version>.zip`| ZIP    |
+
+<Note>
+  Make sure you have compiled cores in the `data/cores/` folder before running the build script. The archives exclude files listed in `.npmignore`.
+</Note>
+
+## Update script
+
+The update script refreshes the contributors list and can optionally bump the version number, update vendored dependencies, or toggle dev mode.
+
+```bash
+npm run update
+```
+
+### CLI flags
+
+Pass flags using `--` to separate npm arguments from script arguments:
+
+<CodeGroup>
+
+```bash Update contributors only
+npm run update
+```
+
+```bash Set version number
+npm run update -- --ejs_v=4.3.1
+```
+
+```bash Update vendored dependencies
+npm run update -- --deps=true
+```
+
+```bash Enable dev mode
+npm run update -- --dev=true
+```
+
+```bash Disable dev mode
+npm run update -- --dev=false
+```
+
+</CodeGroup>
+
+| Flag             | Description                                                                                               |
+| ---------------- | --------------------------------------------------------------------------------------------------------- |
+| `--ejs_v=<ver>`  | Sets the version string in `package.json`, `data/version.json`, `data/cores/package.json`, and `data/src/emulator.js`. |
+| `--deps=true`    | Copies the latest `socket.io.min.js` and `nipplejs.js` from `node_modules` into `data/src/vendor/`.     |
+| `--dev=true`     | Appends `-dev` to the version string in `data/src/emulator.js`.                                          |
+| `--dev=false`    | Removes the `-dev` suffix from the version string in `data/src/emulator.js`.                             |
+
+The script always fetches the current contributor list from the GitHub API and updates `docs/contributors.md`.
+
+## JSDoc generation
+
+```bash
+npm run docs
+```
+
+Generates API documentation from JSDoc comments in `data/src/*.js` using [JSDoc](https://jsdoc.app). Output is written to the `jsdoc/` directory.
+
+## Project file structure
+
+```
+EmulatorJS/
+├── data/
+│   ├── src/              # Unminified source files
+│   │   ├── emulator.js   # Main emulator class
+│   │   └── vendor/       # Vendored libraries (socket.io, nipplejs)
+│   ├── cores/            # Compiled libretro core files
+│   ├── emulator.css      # Main stylesheet
+│   ├── emulator.min.js   # Minified JS output (generated)
+│   └── emulator.min.css  # Minified CSS output (generated)
+├── minify/
+│   ├── minify.js         # Minification script
+│   └── README.md
+├── dist/                 # Release archives (generated)
+├── jsdoc/                # JSDoc output (generated)
+├── build.js              # Build / archive script
+├── update.js             # Version / contributor update script
+└── package.json
+```

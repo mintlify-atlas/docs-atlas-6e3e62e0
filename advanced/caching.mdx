@@ -1,0 +1,180 @@
+---
+title: 'Caching'
+description: 'How EmulatorJS uses IndexedDB to cache ROMs, cores, and BIOS files — and how to configure, monitor, and troubleshoot it.'
+---
+
+## Overview
+
+EmulatorJS includes a unified caching system built on IndexedDB. On the first load, the browser downloads ROMs, emulator cores, and BIOS files and stores them locally. On subsequent visits, the cached copies are served directly — skipping the network entirely when the content has not changed on the server.
+
+The system has two internal components:
+
+- **EJS_Download** — handles HTTP(S) downloads, validates cached copies against server headers, and decompresses archives automatically.
+- **EJS_Cache** — manages the IndexedDB store, enforces size and age limits, and runs LRU eviction when the cache grows too large.
+
+### Cache flow
+
+```
+Download request
+  → Check IndexedDB for cached URL
+      → Cache hit & expiry valid?  ──Yes──▶ Return cached content
+      → Cache expired?             ──Yes──▶ HEAD request (Last-Modified check)
+          → File unchanged?        ──Yes──▶ Return cached content
+          → File changed / HEAD failed ──▶ Full download
+              → Decompress if .zip/.7z/.rar
+              → Store in IndexedDB
+              → Return content
+```
+
+## Configuration
+
+Set `window.EJS_cacheConfig` **before** `loader.js` loads. All three keys are optional — omitting them falls back to the defaults shown below.
+
+```html
+<script>
+  window.EJS_cacheConfig = {
+    enabled: true,        // enable or disable caching entirely
+    cacheMaxSizeMB: 4096, // maximum cache size in megabytes (default 4 GB)
+    cacheMaxAgeMins: 7200 // maximum item age in minutes (default 5 days)
+  };
+</script>
+<script src="data/loader.js"></script>
+```
+
+<Note>
+The deprecated `EJS_cacheLimit` (bytes) is still accepted but will trigger a deprecation warning in the browser console. Use `EJS_cacheConfig` instead.
+</Note>
+
+### Configuration fields
+
+<ParamField path="enabled" type="boolean" default="true">
+  Enable or disable the IndexedDB cache. When `false`, every page load re-downloads all assets.
+</ParamField>
+
+<ParamField path="cacheMaxSizeMB" type="number" default="4096">
+  Maximum total cache size in megabytes. When adding a new item would exceed this limit, the least-recently-used entries are evicted first.
+</ParamField>
+
+<ParamField path="cacheMaxAgeMins" type="number" default="7200">
+  Maximum age of a cached item in minutes before it is eligible for cleanup. The minimum age floor is whichever is larger: 60 minutes or 10 % of `cacheMaxAgeMins`.
+</ParamField>
+
+### Disabling local storage
+
+To disable all local-storage usage (not just the cache), set `EJS_disableLocalStorage` before loading:
+
+```html
+<script>
+  window.EJS_disableLocalStorage = true;
+</script>
+```
+
+## How cache validation works
+
+The download manager uses a three-level strategy to decide whether to use a cached copy or fetch a new one.
+
+<Steps>
+  <Step title="Check cache expiry (fastest)">
+    Each cached item stores a `cacheExpiry` timestamp derived from the server's `Cache-Control: max-age` or `Expires` header. If neither header is present, the expiry defaults to **5 days** from the time of download. If the expiry is still in the future the cached copy is returned immediately — no network request is made.
+  </Step>
+  <Step title="Conditional HEAD request (medium)">
+    If the cached item has expired, the downloader sends an HTTP `HEAD` request to the origin URL. It compares the server's `Last-Modified` header against the timestamp the item was originally downloaded (`added`). If the file has not changed, the existing cached copy is used and its `lastAccessed` time is updated.
+  </Step>
+  <Step title="Full download (slowest)">
+    A full `GET` request is made only when the server reports a newer `Last-Modified` date, or when the `HEAD` request fails. The downloaded file replaces the previous cache entry.
+  </Step>
+</Steps>
+
+### Archive decompression
+
+Files with a `.zip`, `.7z`, or `.rar` extension are decompressed automatically after download. Each file extracted from the archive is stored as a separate `EJS_FileItem` inside the cache entry. The `forceExtract` internal option can override extension detection when needed.
+
+## LRU eviction policy
+
+When a new item would push the total cache size above `cacheMaxSizeMB`, EmulatorJS removes the least-recently-used entries until enough space is freed. The eviction logic runs inside `EJS_Cache.put()` before every write:
+
+```javascript
+// Items sorted oldest-accessed first, then removed until size fits
+itemsToRemove.sort((a, b) => a.item.lastAccessed - b.item.lastAccessed);
+```
+
+A startup cleanup also runs on the **first cache read** of each browser session. It removes:
+
+- Items older than `cacheMaxAgeMins`
+- Items beyond the size limit that are at least `minAgeMins` old
+- Orphaned blob entries left by incomplete previous deletions (failsafe)
+
+## Cache Manager UI
+
+The in-emulator Cache Manager is accessible from the toolbar. It lists all cached items and shows:
+
+| Column | Description |
+|---|---|
+| Filename | Original filename of the cached asset |
+| Type | Content type: `ROM`, `Core`, `BIOS`, etc. |
+| Size | Total size of all files in the cache entry |
+| URL | Source URL the asset was downloaded from |
+| Last accessed | Relative time of last access |
+| Added | Timestamp when the item was first cached |
+| Cache expiry | When the entry expires based on HTTP headers |
+
+Available actions:
+
+- **Delete item** — remove a single cache entry
+- **Cleanup now** — run the age and size cleanup immediately
+- **Clear all** — wipe the entire cache
+
+## IndexedDB storage architecture
+
+The cache uses a single IndexedDB database named `EmulatorJS-Cache` with two object stores:
+
+- `cache` — stores metadata (key, file size, timestamps, type, URL, expiry). Indexed by `type` and `url` for fast lookups.
+- `blobs` — stores raw binary file data keyed by the same content-hash key.
+
+Separating metadata from blobs means cache-hit checks never load large binary payloads into memory.
+
+Cache keys use a content-hash format: `Obj-{hash}-{byteLength}`.
+
+### Browser compatibility
+
+IndexedDB is required. If it is unavailable (e.g. private browsing on some browsers), EmulatorJS falls back to `EJS_DUMMYSTORAGE` and disables caching silently.
+
+## Performance tips
+
+<Tip>
+Serve ROMs and cores with `Cache-Control: max-age=86400` (or longer) and a `Last-Modified` header. This gives EmulatorJS accurate expiry information and allows conditional requests to skip unnecessary downloads.
+</Tip>
+
+- **Use a CDN** — client-side IndexedDB caching works alongside CDN caching. The first visitor per region warms the CDN; subsequent visitors are served from both the CDN edge and IndexedDB.
+- **Pre-compress assets** — smaller files download faster and occupy less cache space.
+- **Lower `cacheMaxSizeMB`** on shared or low-storage devices to avoid filling the browser's storage quota.
+- **Monitor with debug mode** — set `EJS_DEBUG_XX = true` before loading to see detailed cache logs in the console.
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Cache does not appear to be working">
+    - Check IndexedDB availability: `!!window.indexedDB` should return `true`.
+    - Confirm `EJS_cacheConfig.enabled` is not set to `false`.
+    - Open DevTools → Application → IndexedDB and look for an `EmulatorJS-Cache` database.
+    - Enable debug mode (`window.EJS_DEBUG_XX = true`) and check the console for `[EJS Cache]` messages.
+  </Accordion>
+  <Accordion title="Storage quota exceeded">
+    The browser enforces a storage quota per origin. When it is exceeded, IndexedDB writes fail silently and EmulatorJS falls back to re-downloading.
+
+    - Use the Cache Manager to clear old entries.
+    - Reduce `cacheMaxSizeMB` to a lower value.
+    - Free up space in the browser's site data settings.
+  </Accordion>
+  <Accordion title="Stale content served after updating assets">
+    The default expiry is 5 days. If you update a ROM or core file on the server, cached clients will not pick up the change until their entry expires — unless you also update the `Last-Modified` header.
+
+    To force an immediate refresh:
+    1. Open the Cache Manager and delete the affected entry, or
+    2. Lower `cacheMaxAgeMins` before loading, or
+    3. Serve the updated asset from a new URL.
+  </Accordion>
+  <Accordion title="Slow first load">
+    The first load always downloads and decompresses assets — this is expected. Use the `onProgress` callback internally (or the built-in loading text) to surface progress to users. Subsequent loads will be faster once the cache is warm.
+  </Accordion>
+</AccordionGroup>

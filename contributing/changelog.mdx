@@ -1,0 +1,275 @@
+---
+title: "Changelog"
+description: "Release history for EmulatorJS, including features, bug fixes, and translation updates."
+---
+
+This page summarizes changes across EmulatorJS releases. For the full commit history, visit the [GitHub repository](https://github.com/EmulatorJS/EmulatorJS).
+
+## 4.x releases
+
+<AccordionGroup>
+
+  <Accordion title="4.2.3 — Bug fix release">
+    - Redo image capture features ([@allancoding](https://github.com/allancoding))
+    - Fix issue with invalid button names ([@michael-j-green](https://github.com/michael-j-green))
+    - Fix issues with canvas size
+    - Update `zh-CN` translations ([@incredibleIdea](https://github.com/incredibleIdea))
+  </Accordion>
+
+  <Accordion title="4.2.2 — Features and translations">
+    [View source tree](https://github.com/EmulatorJS/EmulatorJS/tree/a796c4a3866652d1b6cb74a2b90e9552955c2b13)
+
+    **Features and improvements**
+    - Prioritize `gameName` over `gameUrl` for the local storage identifier
+    - Add `EJS_dontExtractBIOS` option ([@pjft](https://github.com/pjft))
+    - Add `saveSaveFiles` event triggered when save files are updated
+    - Add `saveDatabaseLoaded` event triggered when the `/data/saves` directory is mounted
+    - Add ability to set a system save interval
+    - Add `EJS_hideSettings` option to hide entries from the settings menu
+    - Add dropdown selection for gamepads
+    - Add `dosbox_pure` core (requires threading)
+    - Add toggle for direct keyboard input
+    - Add setting to enable/disable mouse lock
+    - Add option to disable `alt` key when using direct keyboard input
+    - Add Romanian translation file ([@jurcaalexandrucristian](https://github.com/jurcaalexandrucristian))
+    - Rework internal method of getting user settings; add `this.getSettingValue`
+    - Redo scrolling in settings menu
+    - Redo about menu CSS
+    - Redo toolbar visibility method ([@allancoding](https://github.com/allancoding))
+    - Redo touchscreen detection ([@allancoding](https://github.com/allancoding))
+    - Write core settings file before loading the core
+    - Correct N64 virtual gamepad inputs
+    - Cleanup famicom controls
+    - Change path to `retroarch.cfg`
+    - Add `joystickInput` property for virtual gamepad buttons
+    - Remove `this.listeners`
+
+    **Bug fixes**
+    - Fix CSS parsing when setting a background image ([@kellenmace](https://github.com/kellenmace))
+    - Delete old screenshot file before saving a new one ([@gantoine](https://github.com/gantoine))
+    - Properly handle failed save states
+    - Fix unknown axis events being discarded
+    - Fix setting gamepad axis to input values 16 to 23
+    - Fix build stack size when building cores
+    - Fix CHD support
+
+    **Translations**
+    - Update Japanese translation ([@noel-forester](https://github.com/noel-forester))
+    - Update Korean translation ([@SooHyuck](https://github.com/SooHyuck))
+    - Attempt to auto-detect system language; add `EJS_disableAutoLang` to opt out
+  </Accordion>
+
+  <Accordion title="4.2.1 — Bug fix release">
+    [View source tree](https://github.com/EmulatorJS/EmulatorJS/tree/13362ef0786990e93462f06505de772031cfc4c2)
+
+    **Bug fixes**
+    - Core-fetch failsafe now fetches a pinned version ([@gantoine](https://github.com/n-at))
+    - Fix video rotation on the arcade core ([@allancoding](https://github.com/allancoding))
+    - Fix switching between cores
+    - Fix gamepad input for c-down
+    - Fix RetroArch always assuming save is `.srm`
+    - Fix EJS exit event
+    - Fix RAR decompression
+    - Fix picodrive core (`sega32x`)
+    - Fix libretro-uae core (`amiga`)
+    - Hide "save/load save files" buttons when unsupported
+    - Correct the order of the core list
+    - Correct behaviour of the placement of bios/parent/patch files
+    - LocalStorage settings are now stored per game instead of per system
+
+    **Translations**
+    - Update French `af-FR` translation ([@t3chnob0y](https://github.com/t3chnob0y))
+  </Accordion>
+
+  <Accordion title="4.2.0 — Stability and new features">
+    [View source tree](https://github.com/EmulatorJS/EmulatorJS/tree/8d42d53d4fdf0166f71eaa07529cadf93350b76e)
+
+    **Features**
+    - Add ability to rotate video ([@allancoding](https://github.com/allancoding))
+    - Organized settings menu into sub-menus
+    - Add ability to internally configure `retroarch.cfg` variables
+    - Add ability to switch between cores in the settings menu
+    - Add ability to enable/disable threads when `SharedArrayBuffer` is defined
+    - Add PSP controller scheme for the control settings menu
+    - Add handling for lightgun devices
+    - Add `ppsspp` core
+    - Read save state from WebAssembly memory
+    - Add checks for whether a core requires threads or WebGL2
+    - Refactor internal `downloadFile` to be promise-based
+
+    **Bug fixes**
+    - Fix audio sliders/mute button ([@n-at](https://github.com/n-at))
+    - Let `same_cdi` core handle zipped BIOS file directly ([@pastisme](https://github.com/pastisme))
+    - Fix default WebGL2 option
+    - Fix EmulatorJS exit button
+    - Fix default settings being saved to localStorage
+    - Fix in-browser SRM saves
+    - Fix PPSSPP asset loading
+    - Fix volume slider background height in Firefox
+
+    **Translations**
+    - Add Persian `fa-AF` language ([@iits-reza](https://github.com/iits-reza))
+  </Accordion>
+
+  <Accordion title="4.1.1">
+    [View source tree](https://github.com/EmulatorJS/EmulatorJS/tree/4951a28de05e072acbe939f46147645a91664a07)
+
+    **Features**
+    - Add ability to switch between WebGL1 and WebGL2
+    - Default to WebGL1 on lower-end cores
+    - Check core compatibility with EmulatorJS
+    - Add core license to right-click menu
+    - Add `exit` button to properly shut down and save files
+    - Add ability to change settings on game-start crash
+    - Modularize EmulatorJS
+    - Add support for `File` objects ([@pastisme](https://github.com/pastisme))
+
+    **Bug fixes**
+    - Fix 2xScaleHQ shaders ([@n-at](https://github.com/n-at))
+    - Disable CUE generation for the PUAE core ([@michael-j-green](https://github.com/michael-j-green))
+    - Fix gamepad support for some older browsers ([@ZhaoTonggang](https://github.com/ZhaoTonggang))
+    - Fix mouse on mobile devices
+    - Fix WHLoader HDF ROMs
+    - Remove usage of `replaceAll`
+    - Add missing calls to translate ([@angelmarfil](https://github.com/angelmarfil))
+
+    **Translations**
+    - Add Vietnamese `vi-VN` ([@TimKieu](https://github.com/TimKieu))
+    - Add Turkish `tr-TR` ([@iGoodie](https://github.com/iGoodie))
+    - Update German translation ([@jonas0b1011001](https://github.com/jonas0b1011001))
+  </Accordion>
+
+  <Accordion title="4.0.12">
+    [View source tree](https://github.com/EmulatorJS/EmulatorJS/tree/c3ba473d1afc278db136f8e1252d0456050d6047)
+
+    - Fix scroll bar CSS ([@allancoding](https://github.com/allancoding))
+    - Flip the context menu instead of going off the page
+    - Add hooks for save files ([@gantoine](https://github.com/gantoine))
+    - Add class for each virtual gamepad button
+    - Add `EJS_forceLegacyCores` option
+    - Add `EJS_noAutoFocus` option (advanced use only)
+    - Add supported Amiga file extensions ([@michael-j-green](https://github.com/michael-j-green))
+    - Display file name of ROM/disk when using M3U lists ([@michael-j-green](https://github.com/michael-j-green))
+    - Add vsync option
+    - Add advanced shader configuration support ([@n-at](https://github.com/n-at))
+  </Accordion>
+
+  <Accordion title="4.0.x — Earlier 4.0 releases">
+    **4.0.11** — [View tree](https://github.com/EmulatorJS/EmulatorJS/tree/cafd80d023afa9562c7054e89a4240f3381d64ff)
+    - Add `EJS_disableLocalStorage` option ([@n-at](https://github.com/n-at))
+    - Add duration parameter to `EJS_emulator.displayMessage` ([@allancoding](https://github.com/allancoding))
+    - `EJS_emulator.gameManager.getState` now returns a `Uint8Array` instead of a promise
+    - Fix broken save states from 4.0.10
+
+    **4.0.10** — [View tree](https://github.com/EmulatorJS/EmulatorJS/tree/390605d2ab48db16c07c8fb4fc2815033af5c3a6)
+    - Fix duplicate control inputs
+    - Fix mobile settings menu positioning
+    - Ability to load custom files into the WebAssembly instance
+    - Rename `mame2003` system to `mame`
+    - Add VICE cores for C64, C128, VIC20, Plus/4, and PET ([@michael-j-green](https://github.com/michael-j-green))
+    - Add ability to disable cached databases
+    - Fix screenshot for some cores
+    - Fix game element focus after fullscreen
+    - Add missing Famicom controls
+    - Fix volume slider shadow ([@allancoding](https://github.com/allancoding))
+
+    **4.0.9** — [View tree](https://github.com/EmulatorJS/EmulatorJS/tree/ddb5c6092f12a63a46d74ea67e6469726665ebc2)
+    - Repository history rewrite for faster cloning
+    - Prevent Vice64 from creating CUE files ([@michael-j-green](https://github.com/michael-j-green))
+    - Add button to open context menu ([@andrigamerita](https://github.com/andrigamerita))
+    - Fix fullscreen resize and bottom menu visibility in Safari
+    - Fix game ROM filename showing as "game" when name is set
+    - Add legacy Nintendo 64 cores for browsers without WebGL2
+    - Update Chinese translation ([@oyepriyansh](https://github.com/oyepriyansh))
+
+    **4.0.8** — [View tree](https://github.com/EmulatorJS/EmulatorJS/tree/f579eb4c080f612723fd6a119b02173cafb37503)
+    - Add updated desmume core
+    - Fix key mapping ([@allancoding](https://github.com/allancoding))
+    - Add `EJS_startButtonName` option
+    - Re-add drag and drop for save states
+    - Fix cheats menu
+    - Add popup for Safari mobile users if game is not running
+    - Add `EJS_softLoad` option
+    - Add amiga and c64 cores
+
+    **4.0.7** — [View tree](https://github.com/EmulatorJS/EmulatorJS/tree/f579eb4c080f612723fd6a119b02173cafb37503)
+    - Add rewind and slowdown ([@n-at](https://github.com/n-at))
+    - Add `EJS_fullscreenOnLoaded` option
+    - Add virtual gamepad toggle to control menu
+    - Add threaded cores
+    - Add TurboGrafx-16, SuperGrafx, PC Engine, Neo Geo Pocket, WonderSwan, PC-FX, and ColecoVision support ([@n-at](https://github.com/n-at))
+    - Add new `mame2003_plus` core as default
+    - Fix virtual gamepad alignment and gamepad ID display
+
+    **4.0.6** — [View tree](https://github.com/EmulatorJS/EmulatorJS/tree/5e338e7a888480cea331f6d4656bc8986a7d6b28)
+    - Fix N64 on iOS Safari
+    - Add virtual gamepads for Atari 2600/7800, Lynx, Jaguar, VB, 3DO ([@n-at](https://github.com/n-at))
+    - Add `EJS_controlScheme` option ([@n-at](https://github.com/n-at))
+    - Add fast forward
+
+    **4.0.5** — [View tree](https://github.com/EmulatorJS/EmulatorJS/tree/5307e6294ed9df5daabd6958b2b307bae01f59f1)
+    - Add `pcsx_rearmed` as new default PSX core
+    - Add `fbneo` as new default arcade core
+    - Add picodrive core (`sega32x`)
+    - Fix/update RAR decompression
+    - Add segaMD, segaCD, sega32x button labels and virtual gamepad ([@n-at](https://github.com/n-at))
+    - Add threading support
+
+    **4.0.4** — [View tree](https://github.com/EmulatorJS/EmulatorJS/tree/41491a738cf92ef9cee7d53f323aa2ab9732c053)
+    - Fix cheats "x" button
+    - Optimize memory usage
+    - Add ability to set URLs to blob/ArrayBuffer/Uint8Array
+
+    **4.0.1** — [View tree](https://github.com/EmulatorJS/EmulatorJS/tree/efbb9dd462ee0e4f2120a6947af312e02fcf657c)
+    - Complete application rewrite
+    - Optimization for smaller screens
+    - Fix gamepad for Firefox
+    - Store and import/export SRM files in browser
+    - Remove old cores and dead code
+  </Accordion>
+
+</AccordionGroup>
+
+## 3.x releases
+
+<AccordionGroup>
+
+  <Accordion title="3.1.5">
+    [View source tree](https://github.com/EmulatorJS/EmulatorJS/tree/f7fa5d41487a424233b40e903020455606d68fee)
+
+    - Fix iOS bug for iPads
+    - Add netplay (working on old cores only)
+  </Accordion>
+
+  <Accordion title="3.1.0">
+    [View source tree](https://github.com/EmulatorJS/EmulatorJS/tree/614f5cb55e2768199ba05b756b47d0ab7ab283fd)
+
+    - Add drag and drop for save states
+    - Beta netplay cleanup
+    - Fix iOS device compatibility
+  </Accordion>
+
+  <Accordion title="3.0.5">
+    [View source tree](https://github.com/EmulatorJS/EmulatorJS/tree/44c31371fb3c314cd8dea36ccbaad89fb3ab98e6)
+
+    - Fix screen recording on devices without `getUserMedia`
+    - Save states pulled directly from the core
+    - Add many new cores: a5200, beetle_vb, desmume2015, fceumm, gambatte, mame2003, mgba, mupen64plus_next, nestopia, snes9x, and more
+    - Add D-pad for virtual gamepad and left-handed mode
+    - Add ability to set custom menu options
+    - Add cache "clear all" button
+  </Accordion>
+
+</AccordionGroup>
+
+## Earlier releases
+
+<Accordion title="2.x and 1.x releases">
+  **2.3.x** — Shader additions, custom virtual gamepad UI, custom control mappings, FPS counter, gamepad handler rewrite, `EJS_disableLocalStorage`, save files auto-saved to IndexedDB every 5 minutes.
+
+  **1.x** — Minification pipeline, modular file structure, beta cores (NDS, GB, N64), screen orientation lock, netplay support, localization, custom virtual gamepad configuration, `EJS_startOnLoaded`, quick save state slots.
+
+  **1.0** — Official release of beta cores in production, old netplay server support, screenshot and screen recording with game name as filename.
+
+  For full details, view the [CHANGES.md](https://github.com/EmulatorJS/EmulatorJS/blob/main/CHANGES.md) file in the repository.
+</Accordion>

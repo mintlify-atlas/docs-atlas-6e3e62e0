@@ -1,0 +1,88 @@
+---
+title: CDN integration
+description: Load EmulatorJS from the public CDN for zero-setup hosting with a choice of stable, latest, or nightly builds.
+---
+
+EmulatorJS provides a public CDN at `https://cdn.emulatorjs.org/`. Using the CDN lets you embed the emulator without hosting or maintaining any files yourself.
+
+## Available channels
+
+| Channel | Description | Recommended for |
+|---------|-------------|-----------------|
+| `stable` | Current release. Code and cores are both tested before each release. | Production use |
+| `latest` | Most recent code on `main`, but with stable cores. Updated on every commit. | Testing new features |
+| `nightly` | Latest code **and** latest cores. Cores are rebuilt daily. | Development / experimentation |
+
+<Warning>
+`latest` is often less stable than `nightly`. `nightly` is not recommended for production because it tracks the active development branch.
+</Warning>
+
+## Setting EJS_pathtodata for CDN
+
+Replace `<version>` with the channel name (`stable`, `latest`, or `nightly`):
+
+```javascript
+EJS_pathtodata = "https://cdn.emulatorjs.org/<version>/data/";
+```
+
+`loader.js` reads this variable and resolves all core, stylesheet, and asset paths relative to it.
+
+## Loading loader.js from the CDN
+
+Include `loader.js` from the same versioned path:
+
+```html
+<script src="https://cdn.emulatorjs.org/<version>/data/loader.js"></script>
+```
+
+## Complete CDN example
+
+```html
+<!DOCTYPE html>
+<html>
+<head>
+  <title>EmulatorJS — CDN example</title>
+  <style>
+    #game { width: 640px; height: 480px; }
+  </style>
+</head>
+<body>
+  <div id="game"></div>
+
+  <script>
+    EJS_player   = "#game";
+    EJS_core     = "snes";
+    EJS_gameUrl  = "/roms/my-game.sfc";
+    EJS_pathtodata = "https://cdn.emulatorjs.org/stable/data/";
+  </script>
+  <script src="https://cdn.emulatorjs.org/stable/data/loader.js"></script>
+</body>
+</html>
+```
+
+## Pinning to a specific version
+
+Instead of a channel alias, you can pin to a specific release tag:
+
+```javascript
+EJS_pathtodata = "https://cdn.emulatorjs.org/4.2.3/data/";
+```
+
+<Tip>
+Pinning to a specific version prevents automatic updates and is a good choice for deployments where you want reproducible behaviour.
+</Tip>
+
+## Trade-offs vs self-hosting
+
+| | CDN | Self-hosted |
+|---|-----|-------------|
+| Setup effort | None | Download, configure, deploy |
+| Control over version | Channel aliases or tags | Any commit or release |
+| Availability dependency | CDN availability | Your server |
+| COOP/COEP headers required | On your page only | On your server |
+| Custom build / minification | Not possible | `npm run minify` |
+| Offline / intranet use | No | Yes |
+
+<Note>
+Regardless of whether you use the CDN or self-host, you still need to set the `Cross-Origin-Opener-Policy: same-origin` and `Cross-Origin-Embedder-Policy: require-corp` HTTP headers on your own page if you want `SharedArrayBuffer` (and therefore threaded cores) to work. See the [self-hosting guide](/guides/self-hosting) for header configuration examples.
+</Note>

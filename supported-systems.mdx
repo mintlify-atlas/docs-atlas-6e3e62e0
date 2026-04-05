@@ -1,0 +1,198 @@
+---
+title: "Supported systems"
+description: "All gaming systems supported by EmulatorJS, with EJS_core values and the libretro cores that power them."
+---
+
+EmulatorJS supports 30+ classic gaming systems via libretro cores compiled to WebAssembly. Use the `EJS_core` value in the table below when configuring `window.EJS_core` on your page.
+
+```javascript
+window.EJS_core = "snes"; // example: Super Nintendo
+```
+
+<Note>
+  When a system lists multiple cores, EmulatorJS uses the first one by default. The active core can be changed from the in-emulator settings menu under **Core**. Setting `window.EJS_forceLegacyCores = true` disables WebGL2 detection, causing the emulator to load the non-WebGL2 core variant even when WebGL2 is available.
+</Note>
+
+---
+
+## Nintendo
+
+| System | `EJS_core` value | Libretro cores |
+|---|---|---|
+| Nintendo Entertainment System | `nes` | `fceumm`, `nestopia` |
+| Super Nintendo Entertainment System | `snes` | `snes9x`, `bsnes` |
+| Nintendo 64 | `n64` | `mupen64plus_next`, `parallel_n64` |
+| Game Boy | `gb` | `gambatte` |
+| Game Boy Advance | `gba` | `mgba` |
+| Nintendo DS | `nds` | `melonds`, `desmume`, `desmume2015` |
+| Virtual Boy | `vb` | `beetle_vb` |
+
+---
+
+## Sega
+
+| System | `EJS_core` value | Libretro cores |
+|---|---|---|
+| Sega Master System | `segaMS` | `smsplus`, `genesis_plus_gx`, `genesis_plus_gx_wide`, `picodrive` |
+| Sega Mega Drive / Genesis | `segaMD` | `genesis_plus_gx`, `genesis_plus_gx_wide`, `picodrive` |
+| Sega Game Gear | `segaGG` | `genesis_plus_gx`, `genesis_plus_gx_wide` |
+| Sega CD | `segaCD` | `genesis_plus_gx`, `genesis_plus_gx_wide`, `picodrive` |
+| Sega 32X | `sega32x` | `picodrive` |
+| Sega Saturn | `segaSaturn` | `yabause` |
+| Sega (auto-detect) | `sega` | `genesis_plus_gx`, `genesis_plus_gx_wide`, `picodrive` |
+
+<Tip>
+  Use `segaMD` for Mega Drive / Genesis ROMs, `segaMS` for Master System, and `segaGG` for Game Gear. The generic `sega` core is useful when the exact hardware generation is unknown.
+</Tip>
+
+---
+
+## Atari
+
+| System | `EJS_core` value | Libretro cores |
+|---|---|---|
+| Atari 2600 | `atari2600` | `stella2014` |
+| Atari 5200 | `atari5200` | `a5200` |
+| Atari 7800 | `atari7800` | `prosystem` |
+| Atari Lynx | `lynx` | `handy` |
+| Atari Jaguar | `jaguar` | `virtualjaguar` |
+
+---
+
+## Sony
+
+| System | `EJS_core` value | Libretro cores |
+|---|---|---|
+| PlayStation | `psx` | `pcsx_rearmed`, `mednafen_psx_hw` |
+| PlayStation Portable | `psp` | `ppsspp` |
+
+<Warning>
+  **PSP requires threading.** Set `window.EJS_threads = true` and configure your server with `Cross-Origin-Opener-Policy: same-origin` and `Cross-Origin-Embedder-Policy: require-corp` headers. PSP also requires WebGL2.
+</Warning>
+
+---
+
+## NEC
+
+| System | `EJS_core` value | Libretro cores |
+|---|---|---|
+| TurboGrafx-16 / SuperGrafx / PC Engine | `pce` | `mednafen_pce` |
+| PC-FX | `pcfx` | `mednafen_pcfx` |
+
+---
+
+## SNK
+
+| System | `EJS_core` value | Libretro cores |
+|---|---|---|
+| NeoGeo Pocket / NeoGeo Pocket Color | `ngp` | `mednafen_ngp` |
+
+---
+
+## Bandai
+
+| System | `EJS_core` value | Libretro cores |
+|---|---|---|
+| WonderSwan / WonderSwan Color | `ws` | `mednafen_wswan` |
+
+---
+
+## 3DO
+
+| System | `EJS_core` value | Libretro cores |
+|---|---|---|
+| 3DO Interactive Multiplayer | `3do` | `opera` |
+
+---
+
+## Arcade
+
+| System | `EJS_core` value | Libretro cores |
+|---|---|---|
+| Arcade (multi-system) | `arcade` | `fbneo`, `fbalpha2012_cps1`, `fbalpha2012_cps2`, `same_cdi` |
+| MAME | `mame` | `mame2003_plus`, `mame2003` |
+
+<Note>
+  Arcade ROMs must match the exact ROM set expected by the core. FBNeo and MAME have different ROM naming conventions and are not interchangeable.
+</Note>
+
+---
+
+## Computer systems
+
+| System | `EJS_core` value | Libretro cores |
+|---|---|---|
+| Amiga | `amiga` | `puae` |
+| Commodore 64 | `c64` | `vice_x64sc` |
+| Commodore 128 | `c128` | `vice_x128` |
+| Commodore PET | `pet` | `vice_xpet` |
+| Commodore Plus/4 | `plus4` | `vice_xplus4` |
+| Commodore VIC-20 | `vic20` | `vice_xvic` |
+| DOS | `dos` | `dosbox_pure` |
+| ColecoVision | `coleco` | `gearcoleco` |
+| Intellivision | `intv` | `freeintv` |
+
+<Warning>
+  **DOS requires threading.** Set `window.EJS_threads = true` and configure your server with `Cross-Origin-Opener-Policy: same-origin` and `Cross-Origin-Embedder-Policy: require-corp` headers.
+</Warning>
+
+---
+
+## Threading and WebGL2 requirements
+
+Some cores have additional browser requirements:
+
+| Requirement | Affected cores | How to enable |
+|---|---|---|
+| SharedArrayBuffer (threading) | `ppsspp` (PSP), `dosbox_pure` (DOS) | Set `window.EJS_threads = true`; server must send COOP/COEP headers |
+| WebGL2 | `ppsspp` (PSP) | Required browser support — most modern browsers include this |
+
+---
+
+## Full system list
+
+<AccordionGroup>
+  <Accordion title="All EJS_core values at a glance">
+
+    | `EJS_core` | System |
+    |---|---|
+    | `atari2600` | Atari 2600 |
+    | `atari5200` | Atari 5200 |
+    | `atari7800` | Atari 7800 |
+    | `lynx` | Atari Lynx |
+    | `jaguar` | Atari Jaguar |
+    | `3do` | 3DO Interactive Multiplayer |
+    | `amiga` | Amiga |
+    | `arcade` | Arcade (FBNeo / FBA) |
+    | `c64` | Commodore 64 |
+    | `c128` | Commodore 128 |
+    | `pet` | Commodore PET |
+    | `plus4` | Commodore Plus/4 |
+    | `vic20` | Commodore VIC-20 |
+    | `coleco` | ColecoVision |
+    | `dos` | DOS |
+    | `intv` | Intellivision |
+    | `mame` | MAME |
+    | `ngp` | NeoGeo Pocket / Color |
+    | `gb` | Nintendo Game Boy |
+    | `gba` | Nintendo Game Boy Advance |
+    | `nds` | Nintendo DS |
+    | `nes` | Nintendo Entertainment System |
+    | `n64` | Nintendo 64 |
+    | `pce` | PC Engine / TurboGrafx-16 |
+    | `pcfx` | PC-FX |
+    | `psx` | PlayStation |
+    | `psp` | PlayStation Portable |
+    | `sega` | Sega (generic) |
+    | `segaCD` | Sega CD |
+    | `segaGG` | Sega Game Gear |
+    | `segaMD` | Sega Mega Drive / Genesis |
+    | `segaMS` | Sega Master System |
+    | `sega32x` | Sega 32X |
+    | `segaSaturn` | Sega Saturn |
+    | `snes` | Super Nintendo Entertainment System |
+    | `vb` | Virtual Boy |
+    | `ws` | WonderSwan / WonderSwan Color |
+
+  </Accordion>
+</AccordionGroup>

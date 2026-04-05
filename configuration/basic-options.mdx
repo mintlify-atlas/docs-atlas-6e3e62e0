@@ -1,0 +1,458 @@
+---
+title: "Basic options"
+description: "Core EJS_* configuration variables for setting up the emulator, loading games, and controlling startup behavior."
+---
+
+All EmulatorJS configuration variables are set as properties on the `window` object before the loader script runs. The loader reads them at startup and maps them into an internal config object.
+
+```html Minimal setup
+<script>
+  EJS_player = "#game";
+  EJS_gameUrl = "/roms/mario.nes";
+  EJS_core = "nes";
+  EJS_pathtodata = "/data/";
+</script>
+<script src="/data/loader.js"></script>
+```
+
+## Required options
+
+<ParamField path="EJS_player" type="string" required>
+  CSS selector for the element that will contain the emulator. The element's contents are replaced entirely.
+
+  ```javascript
+  EJS_player = "#game";
+  ```
+</ParamField>
+
+<ParamField path="EJS_gameUrl" type="string | File | ArrayBuffer | Uint8Array | Blob" required>
+  URL, path, or binary data for the ROM file. Accepts compressed archives (`.zip`, `.7z`). When a `File` object is passed, the file is read directly without a network request.
+
+  ```javascript
+  EJS_gameUrl = "/roms/game.nes";
+  // Or a File object from a file input:
+  EJS_gameUrl = fileInputElement.files[0];
+  ```
+</ParamField>
+
+<ParamField path="EJS_core" type="string" required>
+  The emulation core (system) to use. This maps to a libretro core. Common values:
+
+  | Value | System |
+  |-------|--------|
+  | `nes` | Nintendo Entertainment System |
+  | `snes` | Super Nintendo |
+  | `n64` | Nintendo 64 |
+  | `gb` | Game Boy |
+  | `gba` | Game Boy Advance |
+  | `psx` | PlayStation |
+  | `segaMD` | Sega Mega Drive / Genesis |
+  | `segaMS` | Sega Master System |
+  | `arcade` | Arcade (MAME) |
+
+  See the supported systems page for the full list.
+
+  ```javascript
+  EJS_core = "snes";
+  ```
+</ParamField>
+
+<ParamField path="EJS_pathtodata" type="string" required>
+  Path to the EmulatorJS `data/` directory. Must end with a `/`. If omitted, the loader attempts to infer it from the script URL.
+
+  ```javascript
+  EJS_pathtodata = "/data/";
+  // Or an absolute URL:
+  EJS_pathtodata = "https://cdn.emulatorjs.org/stable/data/";
+  ```
+</ParamField>
+
+## Game metadata
+
+<ParamField path="EJS_gameName" type="string">
+  Display name for the game. Used as the base filename for save states and exported files. When not set, the filename is derived from the ROM URL.
+
+  ```javascript
+  EJS_gameName = "Super Mario World";
+  ```
+</ParamField>
+
+<ParamField path="EJS_biosUrl" type="string | File">
+  URL or `File` object for a BIOS file required by some cores (PlayStation, Game Boy Advance, etc.).
+
+  ```javascript
+  EJS_biosUrl = "/bios/scph1001.bin";
+  ```
+</ParamField>
+
+<ParamField path="EJS_gameID" type="number">
+  A numeric identifier for the current game. Used by the netplay system to group sessions and also affects which LocalStorage key saves settings per game.
+
+  <Warning>
+    If `EJS_gameID` is not set, settings may persist across games unintentionally. Always set this when hosting multiple games.
+  </Warning>
+
+  ```javascript
+  EJS_gameID = 42;
+  ```
+</ParamField>
+
+## Startup behavior
+
+<ParamField path="EJS_startOnLoaded" type="boolean" default="false">
+  When `true`, the emulator starts automatically after all assets finish loading, bypassing the "Start Game" button.
+
+  ```javascript
+  EJS_startOnLoaded = true;
+  ```
+</ParamField>
+
+<ParamField path="EJS_fullscreenOnLoaded" type="boolean" default="false">
+  When `true`, enters fullscreen immediately after the emulator starts.
+
+  ```javascript
+  EJS_fullscreenOnLoaded = true;
+  ```
+</ParamField>
+
+<ParamField path="EJS_startButtonName" type="string" default='"Start Game"'>
+  Custom label for the start button. Supports localization.
+
+  ```javascript
+  EJS_startButtonName = "Play Now";
+  ```
+</ParamField>
+
+<ParamField path="EJS_softLoad" type="boolean" default="false">
+  When `true`, reloads the game without doing a hard reset of the emulator state. Useful for switching ROMs in embedded contexts.
+
+  ```javascript
+  EJS_softLoad = true;
+  ```
+</ParamField>
+
+<ParamField path="EJS_noAutoFocus" type="boolean" default="false">
+  When `true`, prevents the emulator from automatically capturing keyboard focus on start.
+
+  ```javascript
+  EJS_noAutoFocus = true;
+  ```
+</ParamField>
+
+## Audio
+
+<ParamField path="EJS_volume" type="number" default="0.5">
+  Initial volume level as a decimal between `0` (muted) and `1` (full volume).
+
+  ```javascript
+  EJS_volume = 0.8;
+  ```
+</ParamField>
+
+## Threading and performance
+
+<ParamField path="EJS_threads" type="boolean" default="false">
+  Enables multi-threaded cores. Requires the page to be served with `Cross-Origin-Opener-Policy: same-origin` and `Cross-Origin-Embedder-Policy: require-corp` headers so that `SharedArrayBuffer` is available.
+
+  <Warning>
+    Some cores require threads to function. If `EJS_threads` is not set for a core that needs it, the emulator will show an error and refuse to start.
+  </Warning>
+
+  ```javascript
+  EJS_threads = true;
+  ```
+</ParamField>
+
+<ParamField path="EJS_forceLegacyCores" type="boolean" default="false">
+  Forces the emulator to load the legacy (non-WebGL 2) version of cores even when WebGL 2 is available. Use this as a workaround for graphics driver compatibility issues.
+
+  ```javascript
+  EJS_forceLegacyCores = true;
+  ```
+</ParamField>
+
+## Storage
+
+<ParamField path="EJS_disableLocalStorage" type="boolean" default="false">
+  When `true`, disables all use of browser storage (IndexedDB, localStorage) for save data. Save files will not persist between sessions.
+
+  ```javascript
+  EJS_disableLocalStorage = true;
+  ```
+</ParamField>
+
+## File path overrides
+
+<ParamField path="EJS_paths" type="object">
+  An object that overrides the default paths for specific internal files loaded by EmulatorJS. Keys are filenames (not full paths); values are absolute URLs or paths.
+
+  This is useful when you host specific assets on a CDN or a different origin.
+
+  ```javascript
+  EJS_paths = {
+    // Override where the main emulator script is loaded from
+    "emulator.min.js": "https://cdn.example.com/emulator.min.js",
+    // Override a language file
+    "fr.json": "https://cdn.example.com/localization/fr.json"
+  };
+  ```
+
+  The `resolvePath` function in `loader.js` checks this object before constructing paths:
+
+  ```javascript
+  // From loader.js:
+  function resolvePath(path) {
+      if ("undefined" != typeof EJS_paths && typeof EJS_paths[path] === "string") {
+          return EJS_paths[path];
+      } else if (path.endsWith("emulator.min.js") || path.endsWith("css")) {
+          return scriptPath + path;
+      } else {
+          return scriptPath + "src/" + path;
+      }
+  }
+  ```
+</ParamField>
+
+## Screen capture
+
+<ParamField path="EJS_screenCapture" type="object">
+  Configuration object for screenshot and video recording features.
+
+  <Expandable title="photo options">
+    <ParamField path="EJS_screenCapture.photo.source" type="string" default='"canvas"'>
+      Where to capture screenshots from. Either `"canvas"` (the rendered canvas element) or `"retroarch"` (the retroarch screenshot system).
+    </ParamField>
+
+    <ParamField path="EJS_screenCapture.photo.format" type="string" default='"png"'>
+      Image format for screenshots. Typically `"png"` or `"jpeg"`.
+    </ParamField>
+
+    <ParamField path="EJS_screenCapture.photo.upscale" type="number" default="1">
+      Upscale multiplier applied to screenshots. For example, `2` doubles the resolution.
+    </ParamField>
+  </Expandable>
+
+  <Expandable title="video options">
+    <ParamField path="EJS_screenCapture.video.format" type="string" default='"detect"'>
+      Video container format. `"detect"` chooses based on browser support.
+    </ParamField>
+
+    <ParamField path="EJS_screenCapture.video.upscale" type="number" default="1">
+      Upscale multiplier for recorded video.
+    </ParamField>
+
+    <ParamField path="EJS_screenCapture.video.fps" type="number" default="30">
+      Frames per second for recorded video.
+    </ParamField>
+
+    <ParamField path="EJS_screenCapture.video.videoBitrate" type="number" default="2621440">
+      Video bitrate in bits per second. Default is `2.5 * 1024 * 1024` (2.5 Mbps).
+    </ParamField>
+
+    <ParamField path="EJS_screenCapture.video.audioBitrate" type="number" default="196608">
+      Audio bitrate in bits per second. Default is `192 * 1024` (192 kbps).
+    </ParamField>
+  </Expandable>
+
+  ```javascript
+  EJS_screenCapture = {
+    photo: {
+      source: "canvas",
+      format: "png",
+      upscale: 2
+    },
+    video: {
+      fps: 60,
+      videoBitrate: 5 * 1024 * 1024
+    }
+  };
+  ```
+</ParamField>
+
+## Browser mode
+
+<ParamField path="EJS_browserMode" type="string | number" default='"auto"'>
+  Controls whether the emulator treats the browser as mobile or desktop. Affects the virtual gamepad visibility and touch input handling.
+
+  | Value | Behavior |
+  |-------|----------|
+  | `"auto"` or `undefined` | Auto-detects based on user agent and touch capability |
+  | `"mobile"` or `1` | Forces mobile mode (shows virtual gamepad) |
+  | `"desktop"` or `2` | Forces desktop mode (hides virtual gamepad) |
+
+  ```javascript
+  EJS_browserMode = "desktop";
+  ```
+</ParamField>
+
+## ROM and BIOS loading
+
+<ParamField path="EJS_gamePatchUrl" type="string">
+  URL to a patch file (`.ips` or `.bps`) to apply to the ROM before loading. Used for ROM hacks and fan translations.
+
+  ```javascript
+  EJS_gamePatchUrl = "/patches/my-translation.ips";
+  ```
+</ParamField>
+
+<ParamField path="EJS_gameParentUrl" type="string">
+  URL to the parent ROM required by some arcade games. Certain MAME/FBNeo ROMs depend on a parent ROM set that contains shared assets.
+
+  ```javascript
+  EJS_gameParentUrl = "/roms/parent.zip";
+  ```
+</ParamField>
+
+<ParamField path="EJS_dontExtractRom" type="boolean" default="false">
+  When `true`, skips automatic decompression of the ROM file even if it has a `.zip`, `.7z`, or `.rar` extension. Use this if the core expects to receive a compressed archive directly.
+
+  ```javascript
+  EJS_dontExtractRom = true;
+  ```
+</ParamField>
+
+<ParamField path="EJS_dontExtractBIOS" type="boolean" default="false">
+  When `true`, skips automatic decompression of the BIOS file. Useful for cores that read the BIOS archive directly without extraction.
+
+  ```javascript
+  EJS_dontExtractBIOS = true;
+  ```
+</ParamField>
+
+<ParamField path="EJS_externalFiles" type="object">
+  An object of additional files to load into the emulator's virtual filesystem before the core starts. Keys are virtual filesystem paths; values are URLs or binary data.
+
+  ```javascript
+  EJS_externalFiles = {
+    "/data/game.cue": "/roms/game.cue",
+    "/data/game.bin": "/roms/game.bin"
+  };
+  ```
+</ParamField>
+
+<ParamField path="EJS_disableCue" type="boolean">
+  Controls CUE file handling for disc-based systems. When left unset, EmulatorJS automatically determines whether to disable CUE handling based on the core in use. Set explicitly to `true` or `false` to override this behavior.
+
+  ```javascript
+  EJS_disableCue = true; // Disable CUE handling for this core
+  ```
+</ParamField>
+
+## Emulator lifecycle
+
+<ParamField path="EJS_disableAutoUnload" type="boolean" default="false">
+  When `true`, prevents the emulator from unloading automatically (e.g. when navigating away). Useful in single-page applications where you manage the emulator lifecycle manually.
+
+  ```javascript
+  EJS_disableAutoUnload = true;
+  ```
+</ParamField>
+
+<ParamField path="EJS_disableBatchBootup" type="boolean" default="false">
+  When `true`, disables the batch startup sequence used by the DOS core. Set this if you need to control the DOSBox bootup process manually.
+
+  ```javascript
+  EJS_disableBatchBootup = true;
+  ```
+</ParamField>
+
+## Default RetroArch settings
+
+<ParamField path="EJS_defaultOptions" type="object">
+  An object of RetroArch core option key-value pairs to apply when the core first loads. These override the core's built-in defaults and are applied before the game starts, before any user-saved settings are applied.
+
+  Keys are RetroArch option names (the same identifiers shown in the in-emulator settings menu). Values can be strings or numbers.
+
+  ```javascript
+  EJS_defaultOptions = {
+    "snes9x_overclock_cycles": "disabled",
+    "snes9x_gfx_hires": "enabled",
+    "mgba_gb_model": "Game Boy Color"
+  };
+  ```
+
+  <Tip>
+    Use `EJS_DEBUG_XX = true` to see which option keys are available for your core — they are logged to the console when settings are initialized.
+  </Tip>
+</ParamField>
+
+## Debugging
+
+<ParamField path="EJS_DEBUG_XX" type="boolean" default="false">
+  Enables verbose debug logging to the browser console. Logs script paths, language loading, core decompression progress, and more.
+
+  <Note>
+    The variable name is `EJS_DEBUG_XX` exactly — the double `X` is intentional.
+  </Note>
+
+  ```javascript
+  EJS_DEBUG_XX = true;
+  ```
+</ParamField>
+
+## Event callbacks
+
+Set these before the loader script runs. Each must be a function.
+
+```javascript
+EJS_ready = function() {
+  console.log("Emulator is ready");
+};
+
+EJS_onGameStart = function() {
+  console.log("Game started");
+};
+
+EJS_onLoadState = function() {
+  console.log("State loaded");
+};
+
+EJS_onSaveState = function() {
+  console.log("State saved");
+};
+
+EJS_onLoadSave = function() {
+  console.log("Save file loaded");
+};
+
+EJS_onSaveSave = function() {
+  console.log("Save file written");
+};
+
+// Called periodically when save data changes
+EJS_onSaveUpdate = function() {
+  console.log("Save data updated");
+};
+```
+
+## Complete example
+
+```html
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    #game { width: 800px; height: 600px; }
+  </style>
+</head>
+<body>
+  <div id="game"></div>
+
+  <script>
+    EJS_player      = "#game";
+    EJS_gameUrl     = "/roms/super-mario-world.sfc";
+    EJS_core        = "snes";
+    EJS_pathtodata  = "/data/";
+    EJS_gameName    = "Super Mario World";
+    EJS_gameID      = 1;
+    EJS_volume      = 0.7;
+    EJS_startOnLoaded = true;
+
+    EJS_onGameStart = function() {
+      console.log("Game started!");
+    };
+  </script>
+  <script src="/data/loader.js"></script>
+</body>
+</html>
+```

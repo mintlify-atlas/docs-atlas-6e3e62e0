@@ -1,0 +1,145 @@
+---
+title: "Shaders"
+description: "Apply visual shaders to enhance the look of emulated games, from CRT scanlines to pixel upscalers."
+---
+
+EmulatorJS ships with a collection of GLSL shaders sourced from the [libretro shader library](https://github.com/libretro/glsl-shaders). Players can select shaders from the in-game settings menu, and developers can add custom shaders via `EJS_shaders`.
+
+## Built-in shaders
+
+The following shaders are bundled and available out of the box:
+
+| Shader name | Description |
+|---|---|
+| `2xScaleHQ.glslp` | 2x pixel upscaler using ScaleHQ algorithm |
+| `4xScaleHQ.glslp` | 4x pixel upscaler using ScaleHQ algorithm |
+| `sabr` | Smooth pixel upscaler (SABR v3.0) |
+| `crt-aperture.glslp` | CRT with aperture grille mask |
+| `crt-easymode.glslp` | Simple, fast CRT shader |
+| `crt-geom.glslp` | CRT with curved screen geometry |
+| `crt-mattias.glslp` | CRT by Mattias Gustavsson |
+| `crt-beam` | CRT beam simulation |
+| `crt-caligari` | CRT with caligari tone mapping |
+| `crt-lottes` | CRT by Timothy Lottes |
+| `crt-zfast` | Fast CRT approximation |
+| `crt-yeetron` | CRT yeetron variant |
+| `bicubic` | Bicubic interpolation upscaler |
+| `mix-frames` | Frame blending/mixing |
+
+Players select shaders from **Settings → Video → Shader** inside the emulator UI.
+
+<Note>
+  Shaders require WebGL support in the browser. The `ppsspp` core additionally requires WebGL2.
+</Note>
+
+## Adding custom shaders
+
+Use `EJS_shaders` to inject additional shaders into the emulator before `loader.js` loads. Your entries are merged with the built-in shader set via `Object.assign`.
+
+```javascript setup.js (from source)
+// In setup.js:
+// this.EJS.shaders = Object.assign({}, EJS_SHADERS, config.additionalShaders || {});
+```
+
+Set `window.EJS_shaders` to an object where each key is the shader's display name and the value is either a plain GLSL string or an advanced object with separate files.
+
+### Simple format
+
+Use a plain string when your shader is a single self-contained GLSL file:
+
+```javascript
+window.EJS_shaders = {
+  "my-custom-shader": "/* GLSL shader code here */"
+};
+```
+
+### Advanced format (multi-file)
+
+Use the advanced object format when your shader references additional resource files (e.g. a `.glslp` preset that references a `.glsl` file):
+
+```javascript
+window.EJS_shaders = {
+  "my-shader.glslp": {
+    // Main shader preset file
+    "shader": {
+      "type": "text",       // "text" for plain text, "base64" for Base64-encoded
+      "value": "shaders = 1\n\nshader0 = \"my-shader.glsl\"\nfilter_linear0 = false\n"
+    },
+    // Additional resource files referenced by the preset
+    "resources": [
+      {
+        "name": "my-shader.glsl",   // filename placed alongside the preset
+        "type": "text",
+        "value": "/* GLSL fragment/vertex shader source */"
+      }
+    ]
+  }
+};
+```
+
+<Tip>
+  If your GLSL source is large, encode it as Base64 and use `"type": "base64"` to keep the JavaScript file readable. This is how all built-in shaders store their code in `shaders.js`.
+</Tip>
+
+### Full example
+
+```html index.html
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body>
+  <div id="game"></div>
+
+  <script>
+    window.EJS_player    = "#game";
+    window.EJS_core      = "snes";
+    window.EJS_gameUrl   = "game.sfc";
+    window.EJS_pathtodata = "data/";
+
+    // Add a custom scanline shader
+    window.EJS_shaders = {
+      "simple-scanlines": `
+        #if defined(FRAGMENT)
+        uniform sampler2D Texture;
+        varying vec2 TEX0;
+        void main() {
+          vec4 color = texture2D(Texture, TEX0);
+          if (mod(floor(gl_FragCoord.y), 2.0) == 0.0) {
+            color.rgb *= 0.7;
+          }
+          gl_FragColor = color;
+        }
+        #endif
+      `
+    };
+  </script>
+  <script src="data/loader.js" type="text/javascript"></script>
+</body>
+</html>
+```
+
+## Shader format reference
+
+<AccordionGroup>
+  <Accordion title="Simple string format">
+    The value is a raw GLSL string. EmulatorJS passes it directly to the RetroArch core as a shader file.
+
+    ```javascript
+    window.EJS_shaders = {
+      "shader-name": "/* full GLSL source */"
+    };
+    ```
+  </Accordion>
+
+  <Accordion title="Advanced object format — fields">
+    | Field | Type | Description |
+    |---|---|---|
+    | `shader` | object | Main shader file definition |
+    | `shader.type` | `"text"` \| `"base64"` | Encoding of the value |
+    | `shader.value` | string | Shader file content |
+    | `resources` | array | Additional files referenced by the shader |
+    | `resources[].name` | string | Filename (placed in same directory as shader) |
+    | `resources[].type` | `"text"` \| `"base64"` | Encoding of the resource value |
+    | `resources[].value` | string | Resource file content |
+  </Accordion>
+</AccordionGroup>

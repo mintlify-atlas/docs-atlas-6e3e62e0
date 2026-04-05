@@ -1,0 +1,287 @@
+---
+title: "Controls"
+description: "Configure controller button mappings, toolbar button visibility, control schemes, and settings menu options."
+---
+
+EmulatorJS supports keyboard and gamepad input for up to four players. You can override default key/button bindings, show or hide toolbar buttons, and control which settings are visible to users.
+
+## Default controller mappings
+
+<ParamField path="EJS_defaultControls" type="object">
+  Overrides the default keyboard and gamepad button mappings. The object is keyed by player index (`0`–`3`). Each player's value is an object keyed by button index, where each entry has a `value` (keyboard key name) and/or `value2` (gamepad button label).
+
+  Mappings are **merged** with the built-in defaults — you only need to specify the buttons you want to change.
+
+  ```javascript
+  EJS_defaultControls = {
+    0: {
+      // Button index: { value: "keyboard key", value2: "gamepad button" }
+      0: { value: "x", value2: "BUTTON_2" },  // B
+      8: { value: "z", value2: "BUTTON_1" },  // A
+    }
+  };
+  ```
+
+  ### Button index reference
+
+  | Index | Action | Default keyboard | Default gamepad |
+  |-------|--------|-----------------|-----------------|
+  | 0 | B / Cross | `x` | `BUTTON_2` |
+  | 1 | Y / Square | `s` | `BUTTON_4` |
+  | 2 | Select | `v` | `SELECT` |
+  | 3 | Start | `enter` | `START` |
+  | 4 | D-pad Up | `up arrow` | `DPAD_UP` |
+  | 5 | D-pad Down | `down arrow` | `DPAD_DOWN` |
+  | 6 | D-pad Left | `left arrow` | `DPAD_LEFT` |
+  | 7 | D-pad Right | `right arrow` | `DPAD_RIGHT` |
+  | 8 | A / Circle | `z` | `BUTTON_1` |
+  | 9 | X / Triangle | `a` | `BUTTON_3` |
+  | 10 | L / L1 | `q` | `LEFT_TOP_SHOULDER` |
+  | 11 | R / R1 | `e` | `RIGHT_TOP_SHOULDER` |
+  | 12 | L2 | `tab` | `LEFT_BOTTOM_SHOULDER` |
+  | 13 | R2 | `r` | `RIGHT_BOTTOM_SHOULDER` |
+  | 14 | L3 (stick click) | — | `LEFT_STICK` |
+  | 15 | R3 (stick click) | — | `RIGHT_STICK` |
+  | 16 | Left stick → | `h` | `LEFT_STICK_X:+1` |
+  | 17 | Left stick ← | `f` | `LEFT_STICK_X:-1` |
+  | 18 | Left stick ↓ | `g` | `LEFT_STICK_Y:+1` |
+  | 19 | Left stick ↑ | `t` | `LEFT_STICK_Y:-1` |
+  | 20 | Right stick → | `l` | `RIGHT_STICK_X:+1` |
+  | 21 | Right stick ← | `j` | `RIGHT_STICK_X:-1` |
+  | 22 | Right stick ↓ | `k` | `RIGHT_STICK_Y:+1` |
+  | 23 | Right stick ↑ | `i` | `RIGHT_STICK_Y:-1` |
+
+  ### Gamepad button labels
+
+  Gamepad values use the standard labels from `GamepadHandler`:
+
+  | Label | Gamepad button |
+  |-------|---------------|
+  | `BUTTON_1` | Button 0 (A/Cross) |
+  | `BUTTON_2` | Button 1 (B/Circle) |
+  | `BUTTON_3` | Button 2 (X/Square) |
+  | `BUTTON_4` | Button 3 (Y/Triangle) |
+  | `LEFT_TOP_SHOULDER` | L1 / LB |
+  | `RIGHT_TOP_SHOULDER` | R1 / RB |
+  | `LEFT_BOTTOM_SHOULDER` | L2 / LT |
+  | `RIGHT_BOTTOM_SHOULDER` | R2 / RT |
+  | `SELECT` | Select / Back |
+  | `START` | Start / Menu |
+  | `LEFT_STICK` | L3 (left stick click) |
+  | `RIGHT_STICK` | R3 (right stick click) |
+  | `DPAD_UP` | D-pad up |
+  | `DPAD_DOWN` | D-pad down |
+  | `DPAD_LEFT` | D-pad left |
+  | `DPAD_RIGHT` | D-pad right |
+  | `LEFT_STICK_X:+1` | Left stick right |
+  | `LEFT_STICK_X:-1` | Left stick left |
+  | `LEFT_STICK_Y:+1` | Left stick down |
+  | `LEFT_STICK_Y:-1` | Left stick up |
+</ParamField>
+
+### Examples
+
+<Tabs>
+  <Tab title="WASD movement">
+    ```javascript
+    EJS_defaultControls = {
+      0: {
+        4: { value: "w" },           // D-pad Up → W
+        5: { value: "s" },           // D-pad Down → S
+        6: { value: "a" },           // D-pad Left → A
+        7: { value: "d" },           // D-pad Right → D
+      }
+    };
+    ```
+  </Tab>
+  <Tab title="Two-player setup">
+    ```javascript
+    EJS_defaultControls = {
+      0: {
+        // Player 1 uses arrow keys + Z/X
+        4: { value: "up arrow" },
+        5: { value: "down arrow" },
+        6: { value: "left arrow" },
+        7: { value: "right arrow" },
+        8: { value: "z" },
+        0: { value: "x" },
+      },
+      1: {
+        // Player 2 uses WASD + Q/E
+        4: { value: "w" },
+        5: { value: "s" },
+        6: { value: "a" },
+        7: { value: "d" },
+        8: { value: "q" },
+        0: { value: "e" },
+      }
+    };
+    ```
+  </Tab>
+  <Tab title="Gamepad only">
+    ```javascript
+    // Clear keyboard bindings for player 1, keep only gamepad
+    EJS_defaultControls = {
+      0: {
+        0: { value: "", value2: "BUTTON_2" },
+        8: { value: "", value2: "BUTTON_1" },
+      }
+    };
+    ```
+  </Tab>
+</Tabs>
+
+## Toolbar button visibility
+
+<ParamField path="EJS_Buttons" type="object">
+  Show or hide individual buttons in the emulator's toolbar. Pass `false` to hide a button, or an object to configure it. All buttons are visible by default.
+
+  ```javascript
+  EJS_Buttons = {
+    playPause: true,        // Play/pause toggle
+    restart: false,         // Hide the restart button
+    mute: true,
+    settings: true,
+    fullscreen: true,
+    saveState: true,
+    loadState: true,
+    screenRecord: true,     // Video recording button
+    gamepad: true,          // Control settings button
+    cheat: false,           // Hide cheats button
+    cacheManager: true,
+    saveSavFiles: true,     // Export save file button
+    loadSavFiles: true,     // Import save file button
+    netplay: true,
+    volume: true,           // Volume slider (alias for volumeSlider)
+    contextMenu: true,      // Right-click context menu button
+    diskButton: true,       // Disk swap button (multi-disk games)
+    exitEmulation: false,   // Hide exit button
+  };
+  ```
+
+  ### Available button keys
+
+  | Key | Description |
+  |-----|-------------|
+  | `playPause` | Combined play/pause toggle |
+  | `restart` | Restart the current game |
+  | `mute` / `unmute` | Audio mute toggle |
+  | `settings` | Open the settings menu |
+  | `fullscreen` | Fullscreen toggle |
+  | `enterFullscreen` / `exitFullscreen` | Individual fullscreen buttons |
+  | `saveState` | Save emulator state |
+  | `loadState` | Load emulator state |
+  | `screenRecord` | Start/stop video recording |
+  | `screenshot` | Take a screenshot (quick-bar) |
+  | `quickSave` | Quick save to current slot |
+  | `quickLoad` | Quick load from current slot |
+  | `gamepad` | Open control settings dialog |
+  | `cheat` | Open cheat code manager |
+  | `cacheManager` | Open the cache manager |
+  | `saveSavFiles` | Export `.sav` save file |
+  | `loadSavFiles` | Import `.sav` save file |
+  | `netplay` | Open netplay lobby |
+  | `volume` / `volumeSlider` | Volume slider |
+  | `contextMenu` | Right-click context menu trigger |
+  | `diskButton` | Disk swap for multi-disk games |
+  | `exitEmulation` | Exit/unload the emulator |
+
+  ### Adding a custom button
+
+  Custom buttons require `displayName`, `icon` (SVG string or icon name), and `callback`:
+
+  ```javascript
+  EJS_Buttons = {
+    myCustomButton: {
+      displayName: "Share",
+      icon: '<svg viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92z"/></svg>',
+      callback: function() {
+        navigator.share({ title: document.title, url: window.location.href });
+      }
+    }
+  };
+  ```
+</ParamField>
+
+## Control scheme
+
+<ParamField path="EJS_controlScheme" type="string">
+  Sets the CSS class suffix applied to the virtual gamepad, allowing you to style buttons differently for specific systems. The class `cs_<value>` is added to each virtual button element.
+
+  ```javascript
+  EJS_controlScheme = "snes";
+  // Adds class "cs_snes" to virtual gamepad buttons
+  ```
+
+  This is primarily used for custom virtual gamepad skins.
+</ParamField>
+
+## Auto-save interval
+
+<ParamField path="EJS_fixedSaveInterval" type="number">
+  Interval in milliseconds at which save files are automatically written to browser storage. Set to `0` to disable. When not set, auto-save is not active.
+
+  ```javascript
+  EJS_fixedSaveInterval = 60000; // Auto-save every 60 seconds
+  ```
+</ParamField>
+
+## Settings menu
+
+<ParamField path="EJS_hideSettings" type="string[]">
+  An array of settings IDs to remove from the in-emulator settings menu. Users will not see or be able to change these settings. This does not affect what you can configure via `EJS_*` variables.
+
+  ```javascript
+  EJS_hideSettings = ["shaders", "fps", "rewindEnabled"];
+  ```
+
+  Common setting IDs you can hide:
+
+  | ID | Setting |
+  |----|---------|
+  | `shaders` | Shader selection |
+  | `fps` | FPS display toggle |
+  | `rewindEnabled` | Rewind feature toggle |
+  | `saveStateLocation` | Where save states are stored |
+  | `videoRotation` | Screen rotation |
+  | `ejs_threads` | Thread mode toggle |
+  | `webgl2Enabled` | WebGL 2 toggle |
+
+  <Tip>
+    Use `EJS_hideSettings` to simplify the interface for end users when you want to lock in specific behavior.
+  </Tip>
+</ParamField>
+
+## Complete example
+
+```javascript
+// Hide restart and cheat buttons, remap WASD for movement
+EJS_player      = "#game";
+EJS_gameUrl     = "/roms/zelda.smc";
+EJS_core        = "snes";
+EJS_pathtodata  = "/data/";
+
+EJS_Buttons = {
+  restart: false,
+  cheat: false,
+  exitEmulation: false,
+};
+
+EJS_defaultControls = {
+  0: {
+    4: { value: "w" },
+    5: { value: "s" },
+    6: { value: "a" },
+    7: { value: "d" },
+    8: { value: "j" },    // A
+    0: { value: "k" },    // B
+    10: { value: "u" },   // L
+    11: { value: "i" },   // R
+    2: { value: "space" }, // Select
+    3: { value: "enter" }, // Start
+  }
+};
+
+EJS_fixedSaveInterval = 30000;
+EJS_hideSettings = ["shaders", "fps"];
+```

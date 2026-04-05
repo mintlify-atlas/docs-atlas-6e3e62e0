@@ -1,0 +1,286 @@
+---
+title: 'Virtual gamepad'
+description: 'Configure the on-screen touch gamepad for mobile devices, including button layout, positioning, and analog stick behavior.'
+---
+
+## Overview
+
+EmulatorJS renders an on-screen virtual gamepad for touch-screen devices. The gamepad is a layer of absolutely-positioned buttons and directional pads drawn over the emulator canvas. It activates automatically when a mobile user agent or touch screen is detected, and can be forced on or off with `EJS_browserMode`.
+
+## Mobile and touch detection
+
+`loader.js` passes `EJS_browserMode` to the emulator constructor. The internal `browserMode()` setup function normalizes the value:
+
+| `EJS_browserMode` value | Behavior |
+|---|---|
+| `"mobile"` or `1` | Force mobile mode — virtual gamepad always shown |
+| `"desktop"` or `2` | Force desktop mode — virtual gamepad never shown |
+| `undefined` / `"auto"` or omitted | Auto-detect (default) |
+
+```html
+<!-- Force mobile layout regardless of device -->
+<script>
+  window.EJS_browserMode = 'mobile';
+</script>
+<script src="data/loader.js"></script>
+```
+
+When auto-detection is active, the constructor checks two independent signals:
+
+- **`isMobile`** — user-agent string matching against a large regex of known mobile browsers and devices.
+- **`hasTouchScreen`** — `navigator.maxTouchPoints > 0`, `window.matchMedia("(any-pointer:coarse)")`, or `window.TouchEvent` / `ontouchstart`.
+
+The virtual gamepad activates if **either** flag is true:
+
+```javascript
+if ((this.isMobile || this.hasTouchScreen) && this.virtualGamepad) {
+    this.virtualGamepad.classList.add("ejs-vgamepad-active");
+    this.canvas.classList.add("ejs-canvas-no-pointer");
+}
+```
+
+## Default button layouts
+
+EmulatorJS ships a built-in layout for each supported system. The layout is selected by `getControlScheme()`, which maps the configured core to a scheme name. A few representative examples:
+
+<AccordionGroup>
+  <Accordion title="GBA">
+    ```javascript
+    [
+      { "type": "button", "text": "B",      "id": "b",      "location": "right",  "left": 10,  "top": 70,   "bold": true, "input_value": 0  },
+      { "type": "button", "text": "A",      "id": "a",      "location": "right",  "left": 81,  "top": 40,   "bold": true, "input_value": 8  },
+      { "type": "dpad",   "id": "dpad",     "location": "left", "left": "50%", "top": "50%", "joystickInput": false, "inputValues": [4,5,6,7] },
+      { "type": "button", "text": "Start",  "id": "start",  "location": "center", "left": 60,  "fontSize": 15, "block": true, "input_value": 3 },
+      { "type": "button", "text": "Select", "id": "select", "location": "center", "left": -5,  "fontSize": 15, "block": true, "input_value": 2 },
+      { "type": "button", "text": "L",      "id": "l",      "location": "left",   "left": 3,   "top": -90,  "bold": true, "block": true, "input_value": 10 },
+      { "type": "button", "text": "R",      "id": "r",      "location": "right",  "right": 3,  "top": -90,  "bold": true, "block": true, "input_value": 11 }
+    ]
+    ```
+  </Accordion>
+  <Accordion title="N64">
+    N64 uses a `zone` (nipplejs analog stick) for the analog stick alongside a separate D-pad zone:
+
+    ```javascript
+    [
+      { "type": "button", "text": "B",     "id": "b",     "location": "right", "left": -10, "top": 95,   "input_value": 1, "bold": true },
+      { "type": "button", "text": "A",     "id": "a",     "location": "right", "left": 40,  "top": 150,  "input_value": 0, "bold": true },
+      { "type": "zone",   "id": "stick",   "location": "left",  "left": "50%", "top": "100%", "joystickInput": true,  "inputValues": [16,17,18,19] },
+      { "type": "zone",   "id": "dpad",    "location": "left",  "left": "50%", "top": "0%",   "joystickInput": false, "inputValues": [4,5,6,7] },
+      { "type": "button", "text": "Start", "id": "start", "location": "center","left": 30,  "top": -10,  "fontSize": 15, "block": true, "input_value": 3 },
+      { "type": "button", "text": "Z",     "id": "z",     "location": "top",   "left": 10,  "bold": true, "block": true, "input_value": 12 },
+      { "fontSize": 20, "type": "button", "text": "CU", "id": "cu", "joystickInput": true, "location": "right", "left": 25, "top": -65, "input_value": 23 },
+      { "fontSize": 20, "type": "button", "text": "CD", "id": "cd", "joystickInput": true, "location": "right", "left": 25, "top": 15,  "input_value": 22 },
+      { "fontSize": 20, "type": "button", "text": "CL", "id": "cl", "joystickInput": true, "location": "right", "left": -15,"top": -25, "input_value": 21 },
+      { "fontSize": 20, "type": "button", "text": "CR", "id": "cr", "joystickInput": true, "location": "right", "left": 65, "top": -25, "input_value": 20 }
+    ]
+    ```
+  </Accordion>
+  <Accordion title="SNES">
+    ```javascript
+    [
+      { "type": "button", "text": "X",      "id": "x",      "location": "right",  "left": 40,  "bold": true, "input_value": 9  },
+      { "type": "button", "text": "Y",      "id": "y",      "location": "right",  "top": 40,   "bold": true, "input_value": 1  },
+      { "type": "button", "text": "A",      "id": "a",      "location": "right",  "left": 81,  "top": 40,   "bold": true, "input_value": 8  },
+      { "type": "button", "text": "B",      "id": "b",      "location": "right",  "left": 40,  "top": 80,   "bold": true, "input_value": 0  },
+      { "type": "dpad",   "id": "dpad",     "location": "left", "left": "50%", "top": "50%", "joystickInput": false, "inputValues": [4,5,6,7] },
+      { "type": "button", "text": "Start",  "id": "start",  "location": "center", "left": 60,  "fontSize": 15, "block": true, "input_value": 3 },
+      { "type": "button", "text": "Select", "id": "select", "location": "center", "left": -5,  "fontSize": 15, "block": true, "input_value": 2 },
+      { "type": "button", "text": "L",      "id": "l",      "location": "left",   "left": 3,   "top": -100, "bold": true, "block": true, "input_value": 10 },
+      { "type": "button", "text": "R",      "id": "r",      "location": "right",  "right": 3,  "top": -100, "bold": true, "block": true, "input_value": 11 }
+    ]
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Customizing the layout with EJS_VirtualGamepadSettings
+
+Pass a custom button array via `window.EJS_VirtualGamepadSettings` before `loader.js` loads. When this is set and valid, it completely replaces the default layout for the loaded system.
+
+```html
+<script>
+  window.EJS_VirtualGamepadSettings = [
+    {
+      "type": "button",
+      "text": "B",
+      "id": "b",
+      "location": "right",
+      "left": 10,
+      "top": 70,
+      "bold": true,
+      "input_value": 0
+    },
+    {
+      "type": "button",
+      "text": "A",
+      "id": "a",
+      "location": "right",
+      "left": 81,
+      "top": 40,
+      "bold": true,
+      "input_value": 8
+    },
+    {
+      "type": "dpad",
+      "id": "dpad",
+      "location": "left",
+      "left": "50%",
+      "top": "50%",
+      "joystickInput": false,
+      "inputValues": [4, 5, 6, 7]
+    }
+  ];
+</script>
+<script src="data/loader.js"></script>
+```
+
+### Validation rules
+
+EmulatorJS validates the array before using it. If any required field is missing, the default layout is used instead and a warning is logged to the console.
+
+- The value must be a non-empty array.
+- Every `button` entry must have: `location`, `type`, `id`, `input_value`.
+- Every `dpad` or `zone` entry must have: `location`, `inputValues`.
+
+## Button and element fields
+
+### `button` element
+
+<ParamField path="type" type="string" required>
+  Must be `"button"`.
+</ParamField>
+
+<ParamField path="text" type="string" required>
+  Label displayed on the button face (e.g. `"A"`, `"Start"`).
+</ParamField>
+
+<ParamField path="id" type="string" required>
+  Unique identifier. Added as a CSS class `b_{id}` on the button element, enabling per-button styling.
+</ParamField>
+
+<ParamField path="location" type="string" required>
+  One of `"left"`, `"right"`, `"center"`, or `"top"`. Determines which region of the gamepad overlay the button is placed into.
+</ParamField>
+
+<ParamField path="input_value" type="number" required>
+  RetroArch input index sent when the button is pressed. Standard mappings: `0` = B/Cross, `1` = Y/Square, `2` = Select, `3` = Start, `4–7` = D-pad, `8` = A/Circle, `9` = X/Triangle, `10` = L, `11` = R.
+</ParamField>
+
+<ParamField path="left" type="number | string">
+  CSS `left` offset in pixels (number) or percentage string (e.g. `"50%"`).
+</ParamField>
+
+<ParamField path="right" type="number | string">
+  CSS `right` offset in pixels or percentage string.
+</ParamField>
+
+<ParamField path="top" type="number | string">
+  CSS `top` offset in pixels or percentage string.
+</ParamField>
+
+<ParamField path="bold" type="boolean">
+  Sets `font-weight: bold` on the button label.
+</ParamField>
+
+<ParamField path="fontSize" type="number" default="30">
+  Font size in pixels for the button label.
+</ParamField>
+
+<ParamField path="block" type="boolean">
+  Applies a fixed-height block style (`height: 31px; border: 1px solid #ccc; border-radius: 5px; line-height: 31px;`) — used for text buttons like Start and Select.
+</ParamField>
+
+<ParamField path="joystickInput" type="boolean" default="false">
+  When `true`, the button sends an analog value (`0x7fff`) instead of a digital value (`1`) when pressed. Used for analog face buttons on N64 C-buttons.
+</ParamField>
+
+### `dpad` element
+
+A classic four-direction D-pad rendered as a plus-shaped touch area.
+
+<ParamField path="type" type="string" required>
+  Must be `"dpad"`.
+</ParamField>
+
+<ParamField path="id" type="string" required>
+  Unique identifier for the D-pad element.
+</ParamField>
+
+<ParamField path="location" type="string" required>
+  Region of the overlay: `"left"`, `"right"`, `"center"`, or `"top"`.
+</ParamField>
+
+<ParamField path="inputValues" type="number[]" required>
+  Array of four input indices in order: `[up, down, left, right]`. For standard D-pad: `[4, 5, 6, 7]`.
+</ParamField>
+
+<ParamField path="joystickInput" type="boolean" default="false">
+  When `false`, D-pad sends digital values. When `true`, sends analog values via the axis indices in `inputValues`.
+</ParamField>
+
+### `zone` element
+
+A nipplejs joystick zone. Used for analog sticks (e.g. N64 stick, PSX analog sticks).
+
+<ParamField path="type" type="string" required>
+  Must be `"zone"`.
+</ParamField>
+
+<ParamField path="id" type="string" required>
+  Unique identifier for the zone.
+</ParamField>
+
+<ParamField path="location" type="string" required>
+  Region of the overlay.
+</ParamField>
+
+<ParamField path="inputValues" type="number[]" required>
+  Array of four axis indices: `[up, down, left, right]`. For left stick: `[16, 17, 18, 19]`.
+</ParamField>
+
+<ParamField path="joystickInput" type="boolean">
+  When `true`, sends proportional analog values from the nipplejs zone. When `false`, sends digital direction signals.
+</ParamField>
+
+## nipplejs integration
+
+Analog stick zones use [nipplejs](https://github.com/yoannmoinet/nipplejs) (bundled at `data/src/vendor/nipplejs.js`). nipplejs renders a virtual joystick with a movable nub. The emulator translates the joystick's vector into RetroArch axis values and calls `simulateInput` continuously while the stick is active.
+
+The N64 layout shows both a zone-based stick and a zone-based D-pad:
+
+```javascript
+{ "type": "zone", "id": "stick", "location": "left", "left": "50%", "top": "100%",
+  "joystickInput": true, "inputValues": [16, 17, 18, 19] },
+
+{ "type": "zone", "id": "dpad",  "location": "left", "left": "50%", "top": "0%",
+  "joystickInput": false, "inputValues": [4, 5, 6, 7] }
+```
+
+<Note>
+nipplejs zones are only used for `"zone"` type elements. `"dpad"` type elements use a custom CSS-based four-direction touch area that does not use nipplejs.
+</Note>
+
+## CSS customization
+
+Each button element receives two CSS classes:
+
+- `ejs_virtualGamepad_button` — applied to all buttons
+- `cs_{controlScheme}` — e.g. `cs_gba`, `cs_snes` — scoped to the active control scheme
+- `b_{id}` — e.g. `b_a`, `b_start` — targets an individual button
+
+This makes it straightforward to restyle specific buttons:
+
+```css
+/* Make the A button larger on SNES */
+.cs_snes.b_a {
+  width: 60px;
+  height: 60px;
+  font-size: 24px;
+}
+
+/* Change color of all virtual gamepad buttons */
+.ejs_virtualGamepad_button {
+  background: rgba(0, 0, 0, 0.6);
+  color: white;
+  border-radius: 50%;
+}
+```

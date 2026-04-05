@@ -1,0 +1,196 @@
+---
+title: "Localization"
+description: "Configure the emulator's display language, disable automatic language detection, and override specific UI strings."
+---
+
+EmulatorJS ships with translations for 20 languages. By default, the emulator auto-detects the browser's locale using `Intl.DateTimeFormat().resolvedOptions().locale` and loads the matching language file.
+
+## Language options
+
+<ParamField path="EJS_language" type="string">
+  BCP 47 language code for the UI language. When set, overrides the auto-detected system locale.
+
+  ```javascript
+  EJS_language = "fr";     // French
+  EJS_language = "zh-CN";  // Chinese (Simplified)
+  EJS_language = "pt-BR";  // Portuguese (Brazil, exact match)
+  ```
+
+  The loader first tries to load the exact file (e.g., `pt-BR.json`). If not found, it falls back to the base language (`pt.json`). If neither exists, the emulator defaults to English.
+
+  ```javascript
+  // From loader.js:
+  async function loadLanguage(config) {
+      const defaultLangs = ["en", "en-US"];
+      if (!config.language || defaultLangs.includes(config.language)) return config;
+
+      const paths = getLanguagePath(config.language);
+      // paths.path    = "data/localization/fr.json"
+      // paths.fallback = null (no base fallback needed for "fr")
+      // For "pt-BR": paths.fallback = "data/localization/pt.json"
+  }
+  ```
+</ParamField>
+
+<ParamField path="EJS_disableAutoLang" type="boolean">
+  When set to `false`, disables all automatic language loading — even if `EJS_language` is set. By default this variable is unset, which allows language loading to proceed.
+
+  <Note>
+    The check in `loader.js` is `window.EJS_disableAutoLang !== false`. This means language loading runs unless this variable is explicitly set to `false`. Setting it to `true` does **not** disable language loading — only `false` does.
+  </Note>
+
+  ```javascript
+  // Disable all language loading — always use English
+  EJS_disableAutoLang = false;
+  ```
+</ParamField>
+
+## Available languages
+
+| File | Code | Language |
+|------|------|----------|
+| `en.json` | `en`, `en-US` | English (default) |
+| `ar.json` | `ar-SA` | Arabic (Saudi Arabia) |
+| `bn.json` | `bn-BD` | Bengali (Bangladesh) |
+| `de.json` | `de-DE` | German (Germany) |
+| `el.json` | `el-GR` | Greek |
+| `es.json` | `es-419` | Spanish (Latin America) |
+| `fa.json` | `fa-AF` | Persian (Afghanistan) |
+| `fr.json` | `fr-FR` | French (France) |
+| `hi.json` | `hi-IN` | Hindi (India) |
+| `it.json` | `it-IT` | Italian (Italy) |
+| `ja.json` | `ja-JP` | Japanese (Japan) |
+| `jv.json` | `jv-ID` | Javanese (Indonesia) |
+| `km.json` | `km-KH` | Khmer (Cambodia) |
+| `ko.json` | `ko-KR` | Korean (South Korea) |
+| `pt.json` | `pt-BR` | Portuguese (Brazil) |
+| `ro.json` | `ro-RO` | Romanian (Romania) |
+| `ru.json` | `ru-RU` | Russian (Russia) |
+| `tr.json` | `tr-TR` | Turkish (Turkey) |
+| `vi.json` | `vi-VN` | Vietnamese (Vietnam) |
+| `zh.json` | `zh-CN` | Chinese (Simplified) |
+
+## Language file format
+
+Language files are JSON objects mapping English UI strings to their translated equivalents.
+
+```json
+{
+  "Start Game": "Démarrer le jeu",
+  "Loading...": "Chargement...",
+  "Settings": "Paramètres",
+  "Save State": "Sauvegarder l'état",
+  "Load State": "Charger l'état",
+  "Shaders": "Shaders",
+  "Disabled": "Désactivé",
+  "Netplay": "Jeu en réseau",
+  "Create a Room": "Créer une salle",
+  "Rooms": "Salles"
+}
+```
+
+Keys are the exact English strings used internally by the emulator. If a key is missing from the translation file, the emulator falls back to the English string.
+
+## Overriding specific strings
+
+You can override individual strings without creating a full language file. The simplest way is to serve a custom JSON file and point `EJS_paths` to it:
+
+```javascript
+// 1. Create a partial override file, e.g. /custom-lang.json:
+// {
+//   "Start Game": "Play",
+//   "Loading...": "Please wait..."
+// }
+
+EJS_language = "en";
+EJS_paths = {
+  "en.json": "/custom-lang.json"
+};
+```
+
+The `EJS_paths` mechanism allows remapping any filename the loader tries to load:
+
+```javascript
+// From loader.js:
+function getLanguagePath(language) {
+    if ("undefined" != typeof EJS_paths && typeof EJS_paths[language] === "string") {
+        return { path: EJS_paths[language], fallback: null };
+    }
+    // ... default path construction
+}
+```
+
+## Serving a custom language file
+
+To add a language that isn't included, or to override strings for an existing language:
+
+<Steps>
+  <Step title="Create the JSON file">
+    Copy `en.json` as a template, translate the strings, and save it — for example as `/localization/custom.json`.
+
+    ```json
+    {
+      "Start Game": "Launch",
+      "Loading...": "Booting up...",
+      "Settings": "Options",
+      "Netplay": "Online Play"
+    }
+    ```
+
+    You don't need to include every key — missing keys fall back to English.
+  </Step>
+  <Step title="Point to the file">
+    Use `EJS_language` and `EJS_paths` together:
+
+    ```javascript
+    EJS_language = "custom";
+    EJS_paths = {
+      "custom.json": "/localization/custom.json"
+    };
+    ```
+  </Step>
+  <Step title="Verify in debug mode">
+    Enable `EJS_DEBUG_XX = true` to see language loading in the console and spot any missing translations:
+
+    ```
+    Language: custom
+    Language JSON loaded: true
+    Translation not found for 'Cheats'. Language set to 'custom'
+    ```
+  </Step>
+</Steps>
+
+## Merging with base language
+
+When using a regional code like `pt-BR`, the loader merges the base language (`pt.json`) with the regional file (`pt-BR.json`), with regional strings taking priority:
+
+```javascript
+// From loader.js:
+function mergeLanguages(baseJson, overrideJson) {
+    if (!baseJson || !overrideJson) return baseJson || overrideJson || {};
+    return { ...baseJson, ...overrideJson };
+}
+```
+
+This means you can create a regional override that only contains strings that differ from the base language — a useful pattern for submitting community translations.
+
+## RetroArch settings names
+
+The settings menu uses a separate translation source, `retroarch.json`, for RetroArch-specific option names. Set `EJS_settingsLanguage` to `true` to log missing RetroArch setting names to the console, which helps when contributing translations:
+
+```javascript
+window.EJS_settingsLanguage = true; // Set before loader.js runs
+```
+
+<Note>
+  `EJS_settingsLanguage` is read directly by the emulator constructor — it is not mapped through `EJS_paths` or the standard language system.
+</Note>
+
+## Contributing a translation
+
+To contribute a new translation:
+
+1. Download `en.json` from the `data/localization/` directory as your template.
+2. Translate all strings.
+3. Save it as `<language-code>.json` following the existing naming convention.
+4. Submit a pull request to the [EmulatorJS repository](https://github.com/EmulatorJS/EmulatorJS).
